@@ -62,43 +62,23 @@ All terminal interaction goes through `osascript` (AppleScript via the macOS
 
 **Platform detection:** `System.getProperty("os.name").toLowerCase().contains("mac")`
 
-**Launch script:**
-```applescript
-tell application "Terminal"
-  set w to do script "cd '[path]' && clear"
-  set custom title of w to "[label]"
-  activate
-end tell
-```
+### Actual approach: TTY-based tracking
 
-**Focus script:**
-```applescript
-tell application "Terminal"
-  repeat with w in windows
-    if name of w contains "[label]" then
-      set index of w to 1
-      activate
-      return
-    end if
-  end repeat
-end tell
-```
+The design originally assumed window title matching, but `custom title` in Terminal.app
+is overwritten by the shell prompt and cannot be relied upon for programmatic lookup.
 
-**Exists check (for startup restore):**
-```applescript
-tell application "Terminal"
-  repeat with w in windows
-    if name of w contains "[label]" then
-      return "true"
-    end if
-  end repeat
-  return "false"
-end tell
-```
+**Actual implementation:** track by TTY device. When Foreman launches a terminal window,
+AppleScript returns the TTY of the new window (e.g. `/dev/ttys004`). Foreman stores the
+TTY in `SessionRegistry` and uses it for focus and existence checks.
 
-Note: `custom title` sets the tab title. The `name` property of a window reflects
-the tab title. The `contains` check rather than equality handles cases where
-Terminal.app appends shell info to the title.
+**Known limitation — TTY reuse:** TTY numbers are assigned by the OS and reused after
+a terminal closes. If a session's terminal is closed and a new unrelated terminal opens
+on the same TTY, Foreman will incorrectly believe the original session is still running.
+Accepted trade-off: the alternative (title-based tracking) is not reliably available.
+
+**Known limitation — no persistence across restarts:** TTY state is in-memory only.
+When Foreman restarts, all sessions reset to Stopped even if the terminals are still
+open. Accepted trade-off: Foreman restart is infrequent; re-launching is low friction.
 
 ## Session panel changes
 
