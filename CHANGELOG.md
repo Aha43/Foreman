@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- "Brief" button on each session row: generates a handover briefing (role, project, open issues via `gh`, design docs) in a copyable dialog
 - Right-click context menu on project list with "Remove project…" option; confirmation dialog before removal
 - Removing a project drops its sessions from `SessionRegistry` and refreshes the session panel
 
