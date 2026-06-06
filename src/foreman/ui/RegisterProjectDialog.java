@@ -1,0 +1,94 @@
+package foreman.ui;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.nio.file.Path;
+import java.util.Optional;
+
+public class RegisterProjectDialog extends JDialog {
+
+    public record Result(Path path, String name) {}
+
+    private final JTextField pathField = new JTextField(30);
+    private final JTextField nameField = new JTextField(30);
+    private final JButton    okButton  = new JButton("Register");
+
+    private Result result;
+
+    private RegisterProjectDialog(Frame owner) {
+        super(owner, "Register Project", true);
+        pathField.setEditable(false);
+        okButton.setEnabled(false);
+
+        var browseButton = new JButton("Browse…");
+        browseButton.addActionListener(e -> browse(owner));
+        nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { syncOk(); }
+        });
+
+        var cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dispose());
+        okButton.addActionListener(e -> {
+            result = new Result(Path.of(pathField.getText()), nameField.getText().strip());
+            dispose();
+        });
+
+        var form = new JPanel(new GridBagLayout());
+        form.setBorder(new EmptyBorder(12, 12, 4, 12));
+        var gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(4, 0, 4, 8);
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("Path:"), gbc);
+        var pathRow = new JPanel(new BorderLayout(6, 0));
+        pathRow.add(pathField, BorderLayout.CENTER);
+        pathRow.add(browseButton, BorderLayout.EAST);
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        form.add(pathRow, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        form.add(new JLabel("Name:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        form.add(nameField, gbc);
+
+        var buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
+        buttons.add(cancelButton);
+        buttons.add(okButton);
+
+        getContentPane().add(form, BorderLayout.CENTER);
+        getContentPane().add(buttons, BorderLayout.SOUTH);
+        getRootPane().setDefaultButton(okButton);
+
+        pack();
+        setMinimumSize(getSize());
+        setLocationRelativeTo(owner);
+    }
+
+    private void browse(Frame owner) {
+        var chooser = new JFileChooser();
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setDialogTitle("Select project directory");
+        if (chooser.showOpenDialog(owner) == JFileChooser.APPROVE_OPTION) {
+            var dir = chooser.getSelectedFile();
+            pathField.setText(dir.getAbsolutePath());
+            if (nameField.getText().isBlank()) {
+                nameField.setText(dir.getName());
+            }
+            syncOk();
+        }
+    }
+
+    private void syncOk() {
+        okButton.setEnabled(!pathField.getText().isBlank() && !nameField.getText().isBlank());
+    }
+
+    public static Optional<Result> show(Frame owner) {
+        var dialog = new RegisterProjectDialog(owner);
+        dialog.setVisible(true);
+        return Optional.ofNullable(dialog.result);
+    }
+}

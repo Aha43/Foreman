@@ -24,6 +24,10 @@ public class ForemanWorkspaceService {
         return workspace;
     }
 
+    public void setWorkspace(ForemanWorkspace workspace) {
+        this.workspace = workspace;
+    }
+
     public void save() {
         repository.save(workspace, workspacePath);
     }

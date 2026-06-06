@@ -1,0 +1,115 @@
+package foreman.ui;
+
+import foreman.app.ForemanWorkspaceService;
+import foreman.app.SessionRegistry;
+import foreman.domain.Project;
+import foreman.domain.RoleAssignment;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.util.ArrayList;
+
+public class SessionPanel extends JPanel {
+
+    private final ForemanWorkspaceService workspaceService;
+    private final SessionRegistry registry;
+    private final JPanel rowsPanel;
+
+    public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry) {
+        super(new BorderLayout());
+        this.workspaceService = workspaceService;
+        this.registry = registry;
+
+        rowsPanel = new JPanel();
+        rowsPanel.setLayout(new BoxLayout(rowsPanel, BoxLayout.Y_AXIS));
+
+        var scroll = new JScrollPane(rowsPanel);
+        scroll.setBorder(null);
+        add(scroll, BorderLayout.CENTER);
+
+        registry.onChange(this::rebuild);
+        rebuild();
+    }
+
+    public void reload() {
+        rebuild();
+    }
+
+    private void rebuild() {
+        rowsPanel.removeAll();
+
+        var projects = workspaceService.getWorkspace().projects();
+        var rows = collectRows(projects);
+
+        if (rows.isEmpty()) {
+            var empty = new JLabel("No sessions registered. Select a project and mark a role as active.");
+            empty.setHorizontalAlignment(SwingConstants.CENTER);
+            empty.setForeground(UIManager.getColor("Label.disabledForeground"));
+            empty.setBorder(new EmptyBorder(24, 16, 24, 16));
+            rowsPanel.add(empty);
+        } else {
+            for (var row : rows) {
+                rowsPanel.add(buildRow(row));
+                rowsPanel.add(new JSeparator());
+            }
+        }
+
+        rowsPanel.revalidate();
+        rowsPanel.repaint();
+    }
+
+    private record RowData(String projectId, String projectName, String roleId, String roleLabel) {}
+
+    private java.util.List<RowData> collectRows(java.util.List<Project> projects) {
+        var rows = new ArrayList<RowData>();
+        for (var project : projects) {
+            for (var assignment : project.team().assignments()) {
+                rows.add(new RowData(project.id(), project.name(), assignment.roleId(), assignment.label()));
+            }
+        }
+        return rows;
+    }
+
+    private JPanel buildRow(RowData row) {
+        var session = registry.getSessions().stream()
+                .filter(s -> s.projectId().equals(row.projectId()) && s.roleId().equals(row.roleId()))
+                .findFirst();
+        var isActive = session.map(s -> s.active()).orElse(false);
+
+        var panel = new JPanel(new BorderLayout(8, 0));
+        panel.setBorder(new EmptyBorder(8, 12, 8, 12));
+        panel.setOpaque(true);
+
+        var projectLabel = new JLabel(row.projectName());
+        var roleLabel    = new JLabel(row.roleLabel());
+        var statusLabel  = new JLabel(isActive ? "● Active" : "○ Idle");
+        statusLabel.setForeground(isActive
+                ? UIManager.getColor("Component.accentColor")
+                : UIManager.getColor("Label.disabledForeground"));
+
+        if (isActive) {
+            projectLabel.setFont(projectLabel.getFont().deriveFont(Font.BOLD));
+            roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
+        }
+
+        var toggleButton = new JButton(isActive ? "Set Idle" : "Set Active");
+        toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
+
+        var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(projectLabel);
+        left.add(new JLabel("/"));
+        left.add(roleLabel);
+
+        var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+        right.add(statusLabel);
+        right.add(toggleButton);
+
+        panel.add(left, BorderLayout.CENTER);
+        panel.add(right, BorderLayout.EAST);
+
+        return panel;
+    }
+}

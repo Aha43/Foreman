@@ -5,6 +5,14 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Session panel: "Sessions" tab showing all project × role pairs with active/idle toggle; active rows shown bold with accent status indicator
+- `Session` domain record (in-memory, not persisted) and `SessionRegistry` with change notification
+- "Register Project" button in the project list panel; opens a dialog to pick a directory and name
+- Role discovery: scans `docs/roles/*.md` under the project root, extracts role names from headings, falls back to filename-derived name
+- Discovered roles are deduplicated against the library by name (first-registered wins)
+- `ProjectRegistrationService` orchestrates discovery, dedup, team assembly, and workspace save
+
+### Added
 - Project list panel: two-panel split view replacing the placeholder label; left panel lists projects, right panel shows selected project details (name, path, description, team assignments)
 - Empty state ("No projects yet.") when no projects are loaded
 - Domain entities: `Role`, `RoleAssignment`, `Team`, `Project`, `ForemanWorkspace`
