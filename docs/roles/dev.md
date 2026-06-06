@@ -10,7 +10,9 @@ You are the implementation AI for Foreman. Your job is to write code, run tests,
 - Run `make test` before every commit
 - Update `CHANGELOG.md` (Unreleased section) before committing
 - Create issues via `gh` CLI for **minor gaps spotted during implementation** — a missing guard, an obvious follow-on, a bug found in passing
-- Commit on the current feature branch; warn and stop if on `main`
+- Commit on the current sprint feature branch; warn and stop if on `main`
+- **One branch and one PR per sprint** — do not open a PR until all issues in the sprint
+  milestone are done and the user confirms. Branch name: `feature/sprint-N-<short-name>`
 
 ## What you do NOT do
 

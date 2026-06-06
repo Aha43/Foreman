@@ -46,11 +46,12 @@ Run `pwsh scripts/download-libs.ps1` to download all of the above from Maven Cen
 
 - **Always work on a GitHub issue.** Never start implementation without a corresponding issue —
   either one created upfront or one we create together before coding begins.
-  Include `Closes #<number>` in every non-chore commit.
+  Include `Closes #<number>` in every commit that resolves an issue.
 - **Always check the current branch before committing.** If on `main`, warn and stop.
   All feature work must go on a feature branch.
-- **Default feature branch name is `feature/next`.** Rename it to something descriptive
-  (e.g. `feature/project-list`) before opening a PR.
+- **One branch per sprint, one PR per sprint.** The branch name matches the sprint milestone
+  (e.g. `feature/sprint-6-ux-polish`). Do not open a PR until all issues in the sprint
+  milestone are complete and the user has confirmed the sprint is done.
 - When completing a GitHub issue, update the `## [Unreleased]` section of `CHANGELOG.md`
   before committing. Use `Added`, `Changed`, or `Fixed` as appropriate, and include
   `Closes #<number>` in the commit message.
