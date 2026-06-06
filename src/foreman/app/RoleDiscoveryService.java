@@ -32,7 +32,7 @@ public class RoleDiscoveryService {
         try {
             var content = Files.readString(file);
             var name = extractName(content, file.getFileName().toString());
-            return new Role(UUID.randomUUID().toString(), name, content);
+            return new Role(UUID.randomUUID().toString(), name, content, file.getFileName().toString());
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read role file: " + file, e);
         }

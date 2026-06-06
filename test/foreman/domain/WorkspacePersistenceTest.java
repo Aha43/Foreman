@@ -22,7 +22,7 @@ class WorkspacePersistenceTest {
 
     @Test
     void roundTripPreservesWorkspace(@TempDir Path dir) {
-        var role = new Role("role-1", "Dev", "You are the dev.");
+        var role = new Role("role-1", "Dev", "You are the dev.", "dev.md");
         var assignment = new RoleAssignment("role-1", "Dev");
         var team = new Team(List.of(assignment));
         var project = new Project("proj-1", "Foreman", "/home/user/foreman", "The app itself", team);

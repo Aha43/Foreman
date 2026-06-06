@@ -24,7 +24,7 @@ class WorkspaceRemovalTest {
 
     @Test
     void withoutProjectLeavesRolesUntouched() {
-        var role = new Role("r1", "Dev", "instructions");
+        var role = new Role("r1", "Dev", "instructions", "dev.md");
         var ws = new ForemanWorkspace(List.of(role), List.of(project("a", "Alpha")));
         var result = ws.withoutProject("a");
         assertEquals(1, result.roles().size());

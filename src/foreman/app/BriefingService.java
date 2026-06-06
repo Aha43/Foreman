@@ -15,10 +15,23 @@ public class BriefingService {
 
     public record IssueRef(int number, String title) {}
 
+    private static final String GH = resolveGh();
+
+    private static String resolveGh() {
+        try {
+            var proc = new ProcessBuilder("which", "gh").redirectErrorStream(true).start();
+            var path = new String(proc.getInputStream().readAllBytes()).strip();
+            proc.waitFor();
+            return path.isBlank() ? "gh" : path;
+        } catch (Exception e) {
+            return "gh";
+        }
+    }
+
     public String generate(Project project, Role role) {
         var issues     = fetchIssues(Path.of(project.path()));
         var designDocs = findDesignDocs(Path.of(project.path()));
-        var roleDoc    = findRoleDoc(Path.of(project.path()), role.name());
+        var roleDoc    = findRoleDoc(Path.of(project.path()), role);
         return format(project.name(), role.name(), issues, designDocs, roleDoc);
     }
 
@@ -48,9 +61,16 @@ public class BriefingService {
         return sb.toString().stripTrailing();
     }
 
-    Optional<Path> findRoleDoc(Path projectRoot, String roleName) {
+    Optional<Path> findRoleDoc(Path projectRoot, Role role) {
         var rolesDir = projectRoot.resolve("docs/roles");
         if (!Files.isDirectory(rolesDir)) return Optional.empty();
+        // use the stored source filename when available (set at discovery time)
+        if (role.sourceFile() != null && !role.sourceFile().isBlank()) {
+            var path = rolesDir.resolve(role.sourceFile());
+            if (Files.exists(path)) return Optional.of(projectRoot.relativize(path));
+        }
+        // fallback: guess from role name (covers manually created roles)
+        var roleName = role.name();
         var candidates = List.of(
                 roleName.toLowerCase().replace(' ', '-') + ".md",
                 roleName.toLowerCase().replace(' ', '_') + ".md",
@@ -79,7 +99,7 @@ public class BriefingService {
 
     List<IssueRef> fetchIssues(Path projectPath) {
         try {
-            var process = new ProcessBuilder("gh", "issue", "list",
+            var process = new ProcessBuilder(GH, "issue", "list",
                     "--state", "open", "--json", "number,title")
                     .directory(projectPath.toFile())
                     .redirectErrorStream(true)
