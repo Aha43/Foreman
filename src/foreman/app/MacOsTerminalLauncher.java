@@ -5,14 +5,19 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MacOsTerminalLauncher implements TerminalLauncher {
 
     private static final String CLAUDE = resolveExecutable("claude");
-    private static final Path BRIEFING_FILE =
-            Path.of(System.getProperty("user.home"), ".foreman", "last-briefing.txt");
-    private static final Path LAUNCH_SCRIPT =
-            Path.of(System.getProperty("user.home"), ".foreman", "launch.sh");
+    private static final Path FOREMAN_DIR   = Path.of(System.getProperty("user.home"), ".foreman");
+    private static final Path BRIEFING_FILE = FOREMAN_DIR.resolve("last-briefing.txt");
+    private static final Path LAUNCH_SCRIPT = FOREMAN_DIR.resolve("launch.sh");
+
+    // label → TTY device (e.g. /dev/ttys005); in-memory only — TTYs are recycled
+    // by macOS across restarts so persisting them causes stale matches.
+    private final Map<String, String> ttyMap = new LinkedHashMap<>();
 
     private static String resolveExecutable(String name) {
         try {
@@ -35,47 +40,60 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
         copyToClipboard(briefing);
         writeBriefing(briefing);
         writeLaunchScript(projectPath);
-        // AppleScript do script runs bash with the launch script — no double quotes
-        // need to be embedded in the AppleScript string, avoiding the escaping problem.
         var escapedScript = escapeShell(LAUNCH_SCRIPT.toString());
+        // Return the TTY so we can identify the tab later regardless of what
+        // Claude Code does to the visible window title.
         var script = """
                 tell application "Terminal"
                   set w to do script "bash '%s'"
                   set custom title of w to "%s"
                   activate
+                  return tty of w
                 end tell
                 """.formatted(escapedScript, label);
-        runScript(script);
+        var tty = runScriptCapturing(script).strip();
+        if (!tty.isBlank()) {
+            ttyMap.put(label, tty);
+        }
     }
 
     @Override
     public void focus(String label) {
+        var tty = ttyMap.get(label);
+        if (tty == null) return;
         var script = """
                 tell application "Terminal"
                   repeat with w in windows
-                    if name of w contains "%s" then
-                      set index of w to 1
-                      activate
-                      return
-                    end if
+                    repeat with t in tabs of w
+                      if tty of t is "%s" then
+                        set index of w to 1
+                        set selected tab of w to t
+                        activate
+                        return
+                      end if
+                    end repeat
                   end repeat
                 end tell
-                """.formatted(label);
+                """.formatted(tty);
         runScript(script);
     }
 
     @Override
     public boolean exists(String label) {
+        var tty = ttyMap.get(label);
+        if (tty == null) return false;
         var script = """
                 tell application "Terminal"
                   repeat with w in windows
-                    if name of w contains "%s" then
-                      return "true"
-                    end if
+                    repeat with t in tabs of w
+                      if tty of t is "%s" then
+                        return "true"
+                      end if
+                    end repeat
                   end repeat
                   return "false"
                 end tell
-                """.formatted(label);
+                """.formatted(tty);
         try {
             var proc = new ProcessBuilder("osascript", "-e", script)
                     .redirectErrorStream(true)
@@ -93,16 +111,29 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
         return s.replace("'", "'\\''");
     }
 
-    // package-private for testing — generates the bash script content written to launch.sh
+    // package-private for testing
     static String buildLaunchScript(String projectPath) {
         return "#!/bin/bash\n"
                 + "cd '" + escapeShell(projectPath) + "'\n"
                 + "exec '" + escapeShell(CLAUDE) + "' \"$(cat '" + escapeShell(BRIEFING_FILE.toString()) + "')\"\n";
     }
 
+    private String runScriptCapturing(String script) {
+        try {
+            var proc = new ProcessBuilder("osascript", "-e", script)
+                    .redirectErrorStream(true)
+                    .start();
+            var output = new String(proc.getInputStream().readAllBytes()).strip();
+            proc.waitFor();
+            return output;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private void writeBriefing(String briefing) {
         try {
-            Files.createDirectories(BRIEFING_FILE.getParent());
+            Files.createDirectories(FOREMAN_DIR);
             Files.writeString(BRIEFING_FILE, briefing);
         } catch (IOException ignored) {
             // clipboard copy is the fallback
@@ -111,7 +142,7 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
 
     private void writeLaunchScript(String projectPath) {
         try {
-            Files.createDirectories(LAUNCH_SCRIPT.getParent());
+            Files.createDirectories(FOREMAN_DIR);
             Files.writeString(LAUNCH_SCRIPT, buildLaunchScript(projectPath));
             LAUNCH_SCRIPT.toFile().setExecutable(true);
         } catch (IOException ignored) {

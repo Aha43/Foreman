@@ -33,6 +33,17 @@ class TerminalLauncherTest {
     }
 
     @Test
+    void macOsExistsReturnsFalseWhenNoTtyKnown() {
+        // No launch has been called, so no TTY is stored for this label.
+        assertFalse(new MacOsTerminalLauncher().exists("Foreman · Unknown / Role"));
+    }
+
+    @Test
+    void macOsFocusDoesNotThrowWhenNoTtyKnown() {
+        assertDoesNotThrow(() -> new MacOsTerminalLauncher().focus("Foreman · Unknown / Role"));
+    }
+
+    @Test
     void escapeShellLeavesCleanPathUnchanged() {
         assertEquals("/home/user/projects", MacOsTerminalLauncher.escapeShell("/home/user/projects"));
     }

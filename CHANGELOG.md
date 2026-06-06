@@ -5,6 +5,9 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Fixed
+- Sessions no longer show as Running after Foreman restart: TTY map is now in-memory only; macOS recycles /dev/ttysN devices so persisting them caused stale matches against unrelated terminals on restart
+- Closing a terminal no longer leaves the row stuck on "Focus": Foreman reloads session state whenever its window regains focus, detecting closed TTYs and flipping rows back to "Launch"
+- Focus and exists now identify terminal tabs by TTY device (`/dev/ttysN`) instead of window title; Claude Code overrides the visible title via escape sequences so title-based matching was always broken after Claude started; TTY is captured from AppleScript at launch time and persisted to `~/.foreman/tty-map.properties` so it survives Foreman restarts
 - Terminal no longer fails to launch after the Claude auto-start change: the shell command containing `"$(cat ...)"` was embedding double quotes inside an AppleScript double-quoted string, terminating it early; fix writes a real `~/.foreman/launch.sh` script and has AppleScript run `bash '/path/to/launch.sh'` instead, keeping double quotes safely inside the bash script
 
 ### Added

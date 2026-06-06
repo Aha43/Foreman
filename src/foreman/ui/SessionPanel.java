@@ -35,7 +35,6 @@ public class SessionPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         registry.onChange(this::rebuild);
-        if (launcher.isSupported()) restoreRunningState();
         rebuild();
     }
 
