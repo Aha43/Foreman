@@ -50,6 +50,20 @@ Development is issue-driven. Every change starts from a GitHub issue. The projec
 
 Small iterations are preferred over large speculative implementations. The goal is disciplined AI-assisted development, not uncontrolled vibe coding.
 
+## Broader Potential
+
+If Foreman proves useful, it has a natural second audience: people learning how to run
+AI-assisted development projects effectively.
+
+The structured workflow Foreman enforces — defined roles, issue-driven work, explicit
+handovers, one-issue-at-a-time discipline — is itself a methodology. Most people new to
+AI dev jump straight into unstructured vibe coding. Foreman, by making the structured
+approach the path of least resistance, could serve as a practical teaching tool: you
+learn the workflow by using the tool, not by reading about it.
+
+This is not a near-term goal. It becomes relevant once Foreman is stable enough that
+someone other than its author would want to use it.
+
 ## Guiding Principle
 
 Foreman should evolve through small, working increments. Prefer a modest feature that works and teaches something over a broad architecture that is not yet exercised.
