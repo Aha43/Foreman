@@ -12,7 +12,10 @@ public class SettingsDialog extends JDialog {
     private SettingsDialog(Frame owner, ForemanSettingsService settingsService) {
         super(owner, "Settings", true);
 
-        var dirField = new JTextField(settingsService.get().defaultProjectDir(), 30);
+        var current   = settingsService.get();
+        var dirField  = new JTextField(current.defaultProjectDir(), 30);
+        var denseCheck = new JCheckBox("Dense mode (icon-only buttons)");
+        denseCheck.setSelected(current.isDense());
 
         var browseButton = new JButton("Browse…");
         browseButton.addActionListener(e -> {
@@ -28,7 +31,9 @@ public class SettingsDialog extends JDialog {
         var cancelButton = new JButton("Cancel");
         cancelButton.addActionListener(e -> dispose());
         okButton.addActionListener(e -> {
-            settingsService.update(new ForemanSettings(dirField.getText().strip()));
+            var dense = denseCheck.isSelected();
+            settingsService.update(new ForemanSettings(dirField.getText().strip(), dense));
+            ForemanUiHelper.applyDense(dense);
             dispose();
         });
         getRootPane().setDefaultButton(okButton);
@@ -46,6 +51,9 @@ public class SettingsDialog extends JDialog {
         dirRow.add(browseButton, BorderLayout.EAST);
         gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
         form.add(dirRow, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.NONE;
+        form.add(denseCheck, gbc);
 
         var buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
         buttons.add(cancelButton);

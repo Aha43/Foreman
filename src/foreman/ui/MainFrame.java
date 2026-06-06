@@ -70,7 +70,7 @@ public class MainFrame extends JFrame {
                 sessionPanel.reload();
                 var parent = result.path().getParent();
                 if (parent != null) {
-                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString()));
+                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString(), settingsService.get().isDense()));
                 }
             });
         });

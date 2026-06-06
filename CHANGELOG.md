@@ -4,6 +4,10 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Added
+- Icon infrastructure: `ForemanUiHelper` with `iconButton()` / `iconOnlyButton()` / `icon()` / `applyDense()` factory methods; 8 Tabler Icons SVGs downloaded to `src/icons/` and bundled into the JAR
+- Dense mode: Settings dialog checkbox toggles icon-only buttons app-wide; setting persisted to `~/.foreman/settings.json`; `ForemanSettings` gains `Boolean dense` field (null-safe for old JSON)
+
 ### Fixed
 - Sessions no longer show as Running after Foreman restart: TTY map is now in-memory only; macOS recycles /dev/ttysN devices so persisting them caused stale matches against unrelated terminals on restart
 - Closing a terminal no longer leaves the row stuck on "Focus": Foreman reloads session state whenever its window regains focus, detecting closed TTYs and flipping rows back to "Launch"
