@@ -106,7 +106,7 @@ public class SessionPanel extends JPanel {
             var role = workspace.roles().stream()
                     .filter(r -> r.id().equals(row.roleId()))
                     .findFirst()
-                    .orElseGet(() -> new Role(row.roleId(), row.roleLabel(), ""));
+                    .orElseGet(() -> new Role(row.roleId(), row.roleLabel(), "", null));
             var project = workspace.projects().stream()
                     .filter(p -> p.id().equals(row.projectId()))
                     .findFirst()

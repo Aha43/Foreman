@@ -1,5 +1,6 @@
 package foreman.app;
 
+import foreman.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class BriefingServiceTest {
 
     private final BriefingService service = new BriefingService();
+
+    private static Role role(String name, String sourceFile) {
+        return new Role("id", name, "", sourceFile);
+    }
 
     @Test
     void formatIncludesRoleAndProject() {
@@ -58,32 +63,60 @@ class BriefingServiceTest {
         assertFalse(result.contains("Role instructions:"));
     }
 
+    // findRoleDoc — sourceFile takes priority
+
     @Test
-    void findRoleDocLocatesFileByLowercaseName(@TempDir Path root) throws IOException {
+    void findRoleDocUsesSourceFileDirectly(@TempDir Path root) throws IOException {
         var rolesDir = root.resolve("docs/roles");
         Files.createDirectories(rolesDir);
-        Files.writeString(rolesDir.resolve("dev.md"), "# Role: Dev");
+        Files.writeString(rolesDir.resolve("dev.md"), "# Role: Dev Chat");
 
-        var result = service.findRoleDoc(root, "Dev");
+        // name is "Dev Chat" which would never guess "dev.md" by name-conversion alone
+        var result = service.findRoleDoc(root, role("Dev Chat", "dev.md"));
         assertTrue(result.isPresent());
         assertEquals(Path.of("docs/roles/dev.md"), result.get());
     }
 
     @Test
-    void findRoleDocLocatesHyphenatedFile(@TempDir Path root) throws IOException {
+    void findRoleDocFallsBackToNameGuessWhenSourceFileNull(@TempDir Path root) throws IOException {
+        var rolesDir = root.resolve("docs/roles");
+        Files.createDirectories(rolesDir);
+        Files.writeString(rolesDir.resolve("dev.md"), "# Role: Dev");
+
+        var result = service.findRoleDoc(root, role("Dev", null));
+        assertTrue(result.isPresent());
+        assertEquals(Path.of("docs/roles/dev.md"), result.get());
+    }
+
+    @Test
+    void findRoleDocFallsBackToNameGuessWhenSourceFileMissing(@TempDir Path root) throws IOException {
+        var rolesDir = root.resolve("docs/roles");
+        Files.createDirectories(rolesDir);
+        // sourceFile points to a non-existent file; fallback by name should find dev.md
+        Files.writeString(rolesDir.resolve("dev.md"), "# Role: Dev");
+
+        var result = service.findRoleDoc(root, role("Dev", "ghost.md"));
+        assertTrue(result.isPresent());
+        assertEquals(Path.of("docs/roles/dev.md"), result.get());
+    }
+
+    @Test
+    void findRoleDocLocatesHyphenatedFileByName(@TempDir Path root) throws IOException {
         var rolesDir = root.resolve("docs/roles");
         Files.createDirectories(rolesDir);
         Files.writeString(rolesDir.resolve("dev-chat.md"), "# Role: Dev Chat");
 
-        var result = service.findRoleDoc(root, "Dev Chat");
+        var result = service.findRoleDoc(root, role("Dev Chat", null));
         assertTrue(result.isPresent());
         assertEquals(Path.of("docs/roles/dev-chat.md"), result.get());
     }
 
     @Test
     void findRoleDocReturnsEmptyWhenAbsent(@TempDir Path root) {
-        assertTrue(service.findRoleDoc(root, "Dev").isEmpty());
+        assertTrue(service.findRoleDoc(root, role("Dev", null)).isEmpty());
     }
+
+    // findDesignDocs
 
     @Test
     void findDesignDocsReturnsRelativePaths(@TempDir Path root) throws IOException {

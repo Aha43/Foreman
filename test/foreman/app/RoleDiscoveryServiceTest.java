@@ -65,6 +65,16 @@ class RoleDiscoveryServiceTest {
     }
 
     @Test
+    void sourceFileIsSetToFilename(@TempDir Path root) throws IOException {
+        var rolesDir = root.resolve("docs/roles");
+        Files.createDirectories(rolesDir);
+        Files.writeString(rolesDir.resolve("dev.md"), "# Role: Dev Chat\nYou write code.");
+
+        var roles = service.discover(root);
+        assertEquals("dev.md", roles.get(0).sourceFile());
+    }
+
+    @Test
     void ignoresNonMdFiles(@TempDir Path root) throws IOException {
         var rolesDir = root.resolve("docs/roles");
         Files.createDirectories(rolesDir);
