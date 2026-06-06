@@ -9,11 +9,12 @@ import java.util.Arrays;
 public class ForemanMain {
 
     public static void main(String[] args) {
-        var devMode = Arrays.asList(args).contains("--dev");
-        var service = new ForemanWorkspaceService(devMode);
+        var devMode         = Arrays.asList(args).contains("--dev");
+        var workspaceService = new ForemanWorkspaceService(devMode);
+        var settingsService  = new ForemanSettingsService(devMode);
         FlatDarkLaf.setup();
         SwingUtilities.invokeLater(() -> {
-            var frame = new MainFrame(service);
+            var frame = new MainFrame(workspaceService, settingsService);
             frame.setVisible(true);
         });
     }

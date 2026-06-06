@@ -1,6 +1,8 @@
 package foreman.ui;
 
 import foreman.app.AppInfo;
+import foreman.app.ForemanSettings;
+import foreman.app.ForemanSettingsService;
 import foreman.app.ForemanWorkspaceService;
 import foreman.app.ProjectRegistrationService;
 import foreman.app.RoleDiscoveryService;
@@ -11,7 +13,7 @@ import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    public MainFrame(ForemanWorkspaceService service) {
+    public MainFrame(ForemanWorkspaceService service, ForemanSettingsService settingsService) {
         super(AppInfo.NAME + " " + AppInfo.VERSION);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1024, 680);
@@ -52,18 +54,22 @@ public class MainFrame extends JFrame {
         toolbar.setFloatable(false);
 
         var registerBtn = new JButton("Register Project");
-        registerBtn.addActionListener(e ->
-                RegisterProjectDialog.show(this).ifPresent(result -> {
-                    var project = registrationService.register(result.path(), result.name(), service);
-                    listPanel.addProject(project);
-                    detailPanel.showProject(project);
-                    sessionPanel.reload();
-                }));
+        registerBtn.addActionListener(e -> {
+            var initialDir = java.nio.file.Path.of(settingsService.get().defaultProjectDir());
+            RegisterProjectDialog.show(this, initialDir).ifPresent(result -> {
+                var project = registrationService.register(result.path(), result.name(), service);
+                listPanel.addProject(project);
+                detailPanel.showProject(project);
+                sessionPanel.reload();
+                var parent = result.path().getParent();
+                if (parent != null) {
+                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString()));
+                }
+            });
+        });
 
         var settingsBtn = new JButton("Settings");
-        settingsBtn.addActionListener(e ->
-                JOptionPane.showMessageDialog(this, "Settings not yet implemented.",
-                        "Settings", JOptionPane.INFORMATION_MESSAGE));
+        settingsBtn.addActionListener(e -> SettingsDialog.show(this, settingsService));
 
         var exitBtn = new JButton("Exit");
         exitBtn.addActionListener(e -> System.exit(0));

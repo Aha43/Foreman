@@ -5,6 +5,9 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Settings persistence: `ForemanSettings` / `ForemanSettingsRepository` / `ForemanSettingsService` — persisted to `~/.foreman/settings.json`
+- Settings dialog (reachable from toolbar) with default project directory field and Browse button
+- Register Project file chooser now opens in the saved default directory; updates it automatically after each successful registration
 - Main toolbar (non-floatable `JToolBar`) with Register Project, Settings (stub), and Exit buttons; Register Project moved from the project list panel to the toolbar
 
 ### Fixed
