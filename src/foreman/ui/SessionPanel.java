@@ -1,9 +1,10 @@
 package foreman.ui;
 
+import foreman.app.BriefingService;
 import foreman.app.ForemanWorkspaceService;
 import foreman.app.SessionRegistry;
 import foreman.domain.Project;
-import foreman.domain.RoleAssignment;
+import foreman.domain.Role;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,6 +15,7 @@ public class SessionPanel extends JPanel {
 
     private final ForemanWorkspaceService workspaceService;
     private final SessionRegistry registry;
+    private final BriefingService briefingService = new BriefingService();
     private final JPanel rowsPanel;
 
     public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry) {
@@ -59,13 +61,15 @@ public class SessionPanel extends JPanel {
         rowsPanel.repaint();
     }
 
-    private record RowData(String projectId, String projectName, String roleId, String roleLabel) {}
+    private record RowData(String projectId, String projectName, String projectPath,
+                           String roleId, String roleLabel) {}
 
     private java.util.List<RowData> collectRows(java.util.List<Project> projects) {
         var rows = new ArrayList<RowData>();
         for (var project : projects) {
             for (var assignment : project.team().assignments()) {
-                rows.add(new RowData(project.id(), project.name(), assignment.roleId(), assignment.label()));
+                rows.add(new RowData(project.id(), project.name(), project.path(),
+                        assignment.roleId(), assignment.label()));
             }
         }
         return rows;
@@ -96,6 +100,23 @@ public class SessionPanel extends JPanel {
         var toggleButton = new JButton(isActive ? "Set Idle" : "Set Active");
         toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
 
+        var briefButton = new JButton("Brief");
+        briefButton.addActionListener(e -> {
+            var workspace = workspaceService.getWorkspace();
+            var role = workspace.roles().stream()
+                    .filter(r -> r.id().equals(row.roleId()))
+                    .findFirst()
+                    .orElseGet(() -> new Role(row.roleId(), row.roleLabel(), ""));
+            var project = workspace.projects().stream()
+                    .filter(p -> p.id().equals(row.projectId()))
+                    .findFirst()
+                    .orElseGet(() -> new foreman.domain.Project(
+                            row.projectId(), row.projectName(), row.projectPath(), "", new foreman.domain.Team(java.util.List.of())));
+            var owner   = (Frame) SwingUtilities.getWindowAncestor(this);
+            var briefing = briefingService.generate(project, role);
+            BriefingDialog.show(owner, role.name(), project.name(), briefing);
+        });
+
         var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
         left.add(projectLabel);
@@ -105,6 +126,7 @@ public class SessionPanel extends JPanel {
         var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
         right.add(statusLabel);
+        right.add(briefButton);
         right.add(toggleButton);
 
         panel.add(left, BorderLayout.CENTER);
