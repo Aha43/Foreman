@@ -13,7 +13,6 @@ public class ProjectListPanel extends JPanel {
 
     private final DefaultListModel<Project> model = new DefaultListModel<>();
     private final JList<Project> list;
-    private Runnable registerListener;
     private Consumer<Project> removeListener;
 
     public ProjectListPanel(List<Project> projects) {
@@ -68,19 +67,7 @@ public class ProjectListPanel extends JPanel {
             }
         });
 
-        var registerButton = new JButton("Register Project");
-        registerButton.addActionListener(e -> { if (registerListener != null) registerListener.run(); });
-
-        var toolbar = new JPanel(new BorderLayout());
-        toolbar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
-        toolbar.add(registerButton, BorderLayout.CENTER);
-
-        add(toolbar, BorderLayout.NORTH);
         add(new JScrollPane(list), BorderLayout.CENTER);
-    }
-
-    public void onRegister(Runnable listener) {
-        this.registerListener = listener;
     }
 
     public void onRemove(Consumer<Project> listener) {

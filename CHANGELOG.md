@@ -4,6 +4,9 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Added
+- Main toolbar (non-floatable `JToolBar`) with Register Project, Settings (stub), and Exit buttons; Register Project moved from the project list panel to the toolbar
+
 ### Fixed
 - Briefing role doc path now resolves correctly: `Role` stores `sourceFile` (the `.md` filename) at discovery time; `BriefingService` uses it directly instead of guessing from the role name
 - `gh issue list` now works on macOS Homebrew installs: binary path resolved via `which gh` at startup instead of relying on the process PATH

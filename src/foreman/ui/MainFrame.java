@@ -20,24 +20,14 @@ public class MainFrame extends JFrame {
         var registrationService = new ProjectRegistrationService(new RoleDiscoveryService());
         var sessionRegistry     = new SessionRegistry();
 
-        var workspace      = service.getWorkspace();
-        var listPanel      = new ProjectListPanel(workspace.projects());
-        var detailPanel    = new ProjectDetailPanel();
-        var sessionPanel   = new SessionPanel(service, sessionRegistry);
+        var workspace    = service.getWorkspace();
+        var listPanel    = new ProjectListPanel(workspace.projects());
+        var detailPanel  = new ProjectDetailPanel();
+        var sessionPanel = new SessionPanel(service, sessionRegistry);
 
         listPanel.onSelectionChanged(project -> {
             if (project != null) detailPanel.showProject(project);
             else detailPanel.clearProject();
-        });
-
-        listPanel.onRegister(() -> {
-            var owner = (Frame) SwingUtilities.getWindowAncestor(listPanel);
-            RegisterProjectDialog.show(owner).ifPresent(result -> {
-                var project = registrationService.register(result.path(), result.name(), service);
-                listPanel.addProject(project);
-                detailPanel.showProject(project);
-                sessionPanel.reload();
-            });
         });
 
         listPanel.onRemove(project -> {
@@ -57,6 +47,32 @@ public class MainFrame extends JFrame {
         var selected = listPanel.getSelectedProject();
         if (selected != null) detailPanel.showProject(selected);
 
+        // toolbar
+        var toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+
+        var registerBtn = new JButton("Register Project");
+        registerBtn.addActionListener(e ->
+                RegisterProjectDialog.show(this).ifPresent(result -> {
+                    var project = registrationService.register(result.path(), result.name(), service);
+                    listPanel.addProject(project);
+                    detailPanel.showProject(project);
+                    sessionPanel.reload();
+                }));
+
+        var settingsBtn = new JButton("Settings");
+        settingsBtn.addActionListener(e ->
+                JOptionPane.showMessageDialog(this, "Settings not yet implemented.",
+                        "Settings", JOptionPane.INFORMATION_MESSAGE));
+
+        var exitBtn = new JButton("Exit");
+        exitBtn.addActionListener(e -> System.exit(0));
+
+        toolbar.add(registerBtn);
+        toolbar.add(settingsBtn);
+        toolbar.add(Box.createHorizontalGlue());
+        toolbar.add(exitBtn);
+
         var tabs = new JTabbedPane();
         tabs.addTab("Project", detailPanel);
         tabs.addTab("Sessions", sessionPanel);
@@ -65,6 +81,7 @@ public class MainFrame extends JFrame {
         split.setDividerLocation(240);
         split.setDividerSize(4);
 
+        add(toolbar, BorderLayout.NORTH);
         add(split, BorderLayout.CENTER);
     }
 }
