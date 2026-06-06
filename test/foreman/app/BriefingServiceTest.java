@@ -21,26 +21,28 @@ class BriefingServiceTest {
     }
 
     @Test
-    void formatIncludesRoleAndProject() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
-        assertTrue(result.contains("Dev"));
-        assertTrue(result.contains("Foreman"));
+    void formatOpensWithYouAre() {
+        var result = service.format("Foreman", "Dev Chat", List.of(), List.of(), Optional.empty());
+        assertTrue(result.startsWith("You are the Dev Chat for Foreman."));
     }
 
     @Test
-    void formatListsIssues() {
-        var issues = List.of(new BriefingService.IssueRef(4, "Project registration"),
-                             new BriefingService.IssueRef(5, "Session panel"));
-        var result = service.format("Foreman", "Dev", issues, List.of(), Optional.empty());
-        assertTrue(result.contains("#4"));
-        assertTrue(result.contains("Project registration"));
-        assertTrue(result.contains("#5"));
+    void formatAlwaysIncludesClaludeMd() {
+        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        assertTrue(result.contains("- CLAUDE.md"));
     }
 
     @Test
-    void formatShowsFallbackWhenNoIssues() {
+    void formatIncludesRoleDocWithAnnotation() {
+        var result = service.format("Foreman", "Dev", List.of(), List.of(),
+                Optional.of(Path.of("docs/roles/dev.md")));
+        assertTrue(result.contains("docs/roles/dev.md — role instructions"));
+    }
+
+    @Test
+    void formatOmitsRoleDocLineWhenAbsent() {
         var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
-        assertTrue(result.contains("could not fetch issues"));
+        assertFalse(result.contains("role instructions"));
     }
 
     @Test
@@ -51,16 +53,34 @@ class BriefingServiceTest {
     }
 
     @Test
-    void formatIncludesRoleDocWhenPresent() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(),
-                Optional.of(Path.of("docs/roles/dev.md")));
-        assertTrue(result.contains("docs/roles/dev.md"));
+    void formatSingleIssueSetsTask() {
+        var issues = List.of(new BriefingService.IssueRef(11, "Bug: briefing identical"));
+        var result = service.format("Foreman", "Dev", issues, List.of(), Optional.empty());
+        assertTrue(result.contains("Your task: implement issue #11 — Bug: briefing identical."));
+        assertTrue(result.contains("gh issue view 11"));
     }
 
     @Test
-    void formatOmitsRoleDocSectionWhenAbsent() {
+    void formatMultipleIssuesListsThem() {
+        var issues = List.of(new BriefingService.IssueRef(4, "Project registration"),
+                             new BriefingService.IssueRef(5, "Session panel"));
+        var result = service.format("Foreman", "Dev", issues, List.of(), Optional.empty());
+        assertTrue(result.contains("#4"));
+        assertTrue(result.contains("Project registration"));
+        assertTrue(result.contains("#5"));
+        assertTrue(result.contains("Confirm with the user which to start with."));
+    }
+
+    @Test
+    void formatNoIssuesShowsFallback() {
         var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
-        assertFalse(result.contains("Role instructions:"));
+        assertTrue(result.contains("no open issues found"));
+    }
+
+    @Test
+    void formatEndsWithDoNotStart() {
+        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        assertTrue(result.contains("Do not start until you have read the files and issue(s) listed above."));
     }
 
     // findRoleDoc — sourceFile takes priority

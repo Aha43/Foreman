@@ -4,6 +4,9 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Changed
+- Briefing text is now imperative: opens with "You are the <role> for <project>", lists files to read (CLAUDE.md, role doc, design docs), then gives a direct task directive — single-issue: "Your task: implement issue #N", multi-issue: numbered list with "Confirm with the user which to start with", no issues: fallback message; closes with "Do not start until you have read the files and issue(s) listed above."
+
 ### Added
 - Settings persistence: `ForemanSettings` / `ForemanSettingsRepository` / `ForemanSettingsService` — persisted to `~/.foreman/settings.json`
 - Settings dialog (reachable from toolbar) with default project directory field and Browse button

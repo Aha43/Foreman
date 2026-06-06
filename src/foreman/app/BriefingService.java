@@ -38,27 +38,35 @@ public class BriefingService {
     String format(String projectName, String roleName,
                   List<IssueRef> issues, List<Path> designDocs, Optional<Path> roleDoc) {
         var sb = new StringBuilder();
-        sb.append("Hand off to ").append(roleName).append(" on ").append(projectName).append(":\n");
+        sb.append("You are the ").append(roleName).append(" for ").append(projectName).append(".\n");
 
-        roleDoc.ifPresent(p -> sb.append("\nRole instructions: ").append(p).append("\n"));
+        sb.append("\nBefore starting, read:\n");
+        sb.append("  - CLAUDE.md\n");
+        roleDoc.ifPresent(p -> sb.append("  - ").append(p).append(" — role instructions\n"));
+        for (var doc : designDocs) {
+            sb.append("  - ").append(doc).append("\n");
+        }
 
-        sb.append("\nOpen issues:\n");
+        sb.append("\n");
         if (issues.isEmpty()) {
-            sb.append("  (could not fetch issues — run `gh issue list` manually)\n");
+            sb.append("(no open issues found — run `gh issue list` manually)\n");
+        } else if (issues.size() == 1) {
+            var issue = issues.get(0);
+            sb.append("Your task: implement issue #").append(issue.number())
+              .append(" — ").append(issue.title()).append(".\n");
+            sb.append("Run `gh issue view ").append(issue.number()).append("` to read it in full.\n");
         } else {
-            for (var issue : issues) {
-                sb.append("  #").append(issue.number()).append(" — ").append(issue.title()).append("\n");
+            sb.append("Open issues to review:\n");
+            for (int i = 0; i < issues.size(); i++) {
+                var issue = issues.get(i);
+                sb.append("  ").append(i + 1).append(". #").append(issue.number())
+                  .append(" — ").append(issue.title()).append("\n");
             }
+            sb.append("Confirm with the user which to start with.\n");
         }
 
-        if (!designDocs.isEmpty()) {
-            sb.append("\nRelevant docs:\n");
-            for (var doc : designDocs) {
-                sb.append("  ").append(doc).append("\n");
-            }
-        }
-
-        return sb.toString().stripTrailing();
+        sb.append("\nDo not start until you have read the files and issue(s) listed above.");
+        return sb.toString();
     }
 
     Optional<Path> findRoleDoc(Path projectRoot, Role role) {
