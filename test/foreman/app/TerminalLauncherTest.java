@@ -46,4 +46,18 @@ class TerminalLauncherTest {
     void escapeShellHandlesMultipleSingleQuotes() {
         assertEquals("a'\\''b'\\''c", MacOsTerminalLauncher.escapeShell("a'b'c"));
     }
+
+    @Test
+    void buildLaunchCommandContainsCdAndClaude() {
+        var cmd = MacOsTerminalLauncher.buildLaunchCommand("/home/user/myproject");
+        assertTrue(cmd.contains("cd '/home/user/myproject'"));
+        assertTrue(cmd.contains("$(cat '"));
+        assertTrue(cmd.contains("last-briefing.txt"));
+    }
+
+    @Test
+    void buildLaunchCommandEscapesPathSingleQuotes() {
+        var cmd = MacOsTerminalLauncher.buildLaunchCommand("/home/user/it's project");
+        assertTrue(cmd.contains("cd '/home/user/it'\\''s project'"));
+    }
 }

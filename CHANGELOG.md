@@ -5,6 +5,9 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Launch now starts Claude Code automatically with the briefing as its initial message: writes briefing to `~/.foreman/last-briefing.txt`, then runs `claude "$(cat ~/.foreman/last-briefing.txt)"` in the new terminal window; `claude` binary resolved via `which claude` at startup; clipboard copy kept as fallback
+
+### Added
 - Session panel Launch/Focus buttons: "Launch" opens a titled Terminal.app window and copies the briefing to the clipboard; "Focus" brings the existing window to front; status shows `● Running` / `○ Stopped`
 - Startup restore: sessions whose Terminal.app windows survived a Foreman restart are automatically marked Running on launch
 - Non-macOS graceful fallback: when `TerminalLauncher.isSupported()` is false the panel keeps the old manual Active/Idle toggle
