@@ -16,13 +16,13 @@ public class RegisterProjectDialog extends JDialog {
 
     private Result result;
 
-    private RegisterProjectDialog(Frame owner) {
+    private RegisterProjectDialog(Frame owner, Path initialDir) {
         super(owner, "Register Project", true);
         pathField.setEditable(false);
         okButton.setEnabled(false);
 
         var browseButton = new JButton("Browse…");
-        browseButton.addActionListener(e -> browse(owner));
+        browseButton.addActionListener(e -> browse(owner, initialDir));
         nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
@@ -68,8 +68,8 @@ public class RegisterProjectDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    private void browse(Frame owner) {
-        var chooser = new JFileChooser();
+    private void browse(Frame owner, Path initialDir) {
+        var chooser = new JFileChooser(initialDir != null ? initialDir.toFile() : null);
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         chooser.setDialogTitle("Select project directory");
         if (chooser.showOpenDialog(owner) == JFileChooser.APPROVE_OPTION) {
@@ -86,8 +86,8 @@ public class RegisterProjectDialog extends JDialog {
         okButton.setEnabled(!pathField.getText().isBlank() && !nameField.getText().isBlank());
     }
 
-    public static Optional<Result> show(Frame owner) {
-        var dialog = new RegisterProjectDialog(owner);
+    public static Optional<Result> show(Frame owner, Path initialDir) {
+        var dialog = new RegisterProjectDialog(owner, initialDir);
         dialog.setVisible(true);
         return Optional.ofNullable(dialog.result);
     }
