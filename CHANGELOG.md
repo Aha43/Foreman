@@ -4,6 +4,12 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Added
+- `TerminalLauncher` interface with `MacOsTerminalLauncher` (osascript) and `NoOpTerminalLauncher` (stub) implementations
+- `MacOsTerminalLauncher`: `launch` opens a titled Terminal.app window and copies the briefing to the clipboard; `focus` brings an existing window to front; `exists` checks for a window by label
+- Window title convention: `Foreman · [Project] / [Role]`; single-quote escaping for shell-safe AppleScript embedding
+- Platform selection in `ForemanMain`: macOS gets `MacOsTerminalLauncher`, all others get `NoOpTerminalLauncher`
+
 ### Changed
 - Briefing text is now imperative: opens with "You are the <role> for <project>", lists files to read (CLAUDE.md, role doc, design docs), then gives a direct task directive — single-issue: "Your task: implement issue #N", multi-issue: numbered list with "Confirm with the user which to start with", no issues: fallback message; closes with "Do not start until you have read the files and issue(s) listed above."
 

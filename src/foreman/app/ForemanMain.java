@@ -9,12 +9,15 @@ import java.util.Arrays;
 public class ForemanMain {
 
     public static void main(String[] args) {
-        var devMode         = Arrays.asList(args).contains("--dev");
+        var devMode          = Arrays.asList(args).contains("--dev");
         var workspaceService = new ForemanWorkspaceService(devMode);
         var settingsService  = new ForemanSettingsService(devMode);
+        var launcher         = System.getProperty("os.name", "").toLowerCase().contains("mac")
+                ? (TerminalLauncher) new MacOsTerminalLauncher()
+                : new NoOpTerminalLauncher();
         FlatDarkLaf.setup();
         SwingUtilities.invokeLater(() -> {
-            var frame = new MainFrame(workspaceService, settingsService);
+            var frame = new MainFrame(workspaceService, settingsService, launcher);
             frame.setVisible(true);
         });
     }

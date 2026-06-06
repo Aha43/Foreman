@@ -7,14 +7,19 @@ import foreman.app.ForemanWorkspaceService;
 import foreman.app.ProjectRegistrationService;
 import foreman.app.RoleDiscoveryService;
 import foreman.app.SessionRegistry;
+import foreman.app.TerminalLauncher;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    public MainFrame(ForemanWorkspaceService service, ForemanSettingsService settingsService) {
+    private final TerminalLauncher launcher;
+
+    public MainFrame(ForemanWorkspaceService service, ForemanSettingsService settingsService,
+                     TerminalLauncher launcher) {
         super(AppInfo.NAME + " " + AppInfo.VERSION);
+        this.launcher = launcher;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1024, 680);
         setLocationRelativeTo(null);
