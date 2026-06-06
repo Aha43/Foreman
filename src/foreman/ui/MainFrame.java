@@ -2,6 +2,8 @@ package foreman.ui;
 
 import foreman.app.AppInfo;
 import foreman.app.ForemanWorkspaceService;
+import foreman.app.ProjectRegistrationService;
+import foreman.app.RoleDiscoveryService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,13 +16,24 @@ public class MainFrame extends JFrame {
         setSize(1024, 680);
         setLocationRelativeTo(null);
 
-        var workspace = service.getWorkspace();
+        var registrationService = new ProjectRegistrationService(new RoleDiscoveryService());
+
+        var workspace   = service.getWorkspace();
         var listPanel   = new ProjectListPanel(workspace.projects());
         var detailPanel = new ProjectDetailPanel();
 
         listPanel.onSelectionChanged(project -> {
             if (project != null) detailPanel.showProject(project);
             else detailPanel.clearProject();
+        });
+
+        listPanel.onRegister(() -> {
+            var owner = (Frame) SwingUtilities.getWindowAncestor(listPanel);
+            RegisterProjectDialog.show(owner).ifPresent(result -> {
+                var project = registrationService.register(result.path(), result.name(), service);
+                listPanel.addProject(project);
+                detailPanel.showProject(project);
+            });
         });
 
         var selected = listPanel.getSelectedProject();

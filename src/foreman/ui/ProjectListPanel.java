@@ -11,6 +11,7 @@ public class ProjectListPanel extends JPanel {
 
     private final DefaultListModel<Project> model = new DefaultListModel<>();
     private final JList<Project> list;
+    private Runnable registerListener;
 
     public ProjectListPanel(List<Project> projects) {
         super(new BorderLayout());
@@ -46,7 +47,24 @@ public class ProjectListPanel extends JPanel {
             list.setSelectedIndex(0);
         }
 
+        var registerButton = new JButton("Register Project");
+        registerButton.addActionListener(e -> { if (registerListener != null) registerListener.run(); });
+
+        var toolbar = new JPanel(new BorderLayout());
+        toolbar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        toolbar.add(registerButton, BorderLayout.CENTER);
+
+        add(toolbar, BorderLayout.NORTH);
         add(new JScrollPane(list), BorderLayout.CENTER);
+    }
+
+    public void onRegister(Runnable listener) {
+        this.registerListener = listener;
+    }
+
+    public void addProject(Project project) {
+        model.addElement(project);
+        list.setSelectedValue(project, true);
     }
 
     public void onSelectionChanged(Consumer<Project> handler) {
