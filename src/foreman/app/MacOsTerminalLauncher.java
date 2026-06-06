@@ -11,6 +11,8 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
     private static final String CLAUDE = resolveExecutable("claude");
     private static final Path BRIEFING_FILE =
             Path.of(System.getProperty("user.home"), ".foreman", "last-briefing.txt");
+    private static final Path LAUNCH_SCRIPT =
+            Path.of(System.getProperty("user.home"), ".foreman", "launch.sh");
 
     private static String resolveExecutable(String name) {
         try {
@@ -31,15 +33,18 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
     @Override
     public void launch(String projectPath, String label, String briefing) {
         copyToClipboard(briefing);
-        var shellCmd = buildLaunchCommand(projectPath);
+        writeBriefing(briefing);
+        writeLaunchScript(projectPath);
+        // AppleScript do script runs bash with the launch script — no double quotes
+        // need to be embedded in the AppleScript string, avoiding the escaping problem.
+        var escapedScript = escapeShell(LAUNCH_SCRIPT.toString());
         var script = """
                 tell application "Terminal"
-                  set w to do script "%s"
+                  set w to do script "bash '%s'"
                   set custom title of w to "%s"
                   activate
                 end tell
-                """.formatted(shellCmd, label);
-        writeBriefing(briefing);
+                """.formatted(escapedScript, label);
         runScript(script);
     }
 
@@ -88,18 +93,27 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
         return s.replace("'", "'\\''");
     }
 
-    // package-private for testing
-    static String buildLaunchCommand(String projectPath) {
-        var escapedPath = escapeShell(projectPath);
-        var escapedClaude = escapeShell(CLAUDE);
-        var escapedBriefingFile = escapeShell(BRIEFING_FILE.toString());
-        return "cd '%s' && '%s' \"$(cat '%s')\"".formatted(escapedPath, escapedClaude, escapedBriefingFile);
+    // package-private for testing — generates the bash script content written to launch.sh
+    static String buildLaunchScript(String projectPath) {
+        return "#!/bin/bash\n"
+                + "cd '" + escapeShell(projectPath) + "'\n"
+                + "exec '" + escapeShell(CLAUDE) + "' \"$(cat '" + escapeShell(BRIEFING_FILE.toString()) + "')\"\n";
     }
 
     private void writeBriefing(String briefing) {
         try {
             Files.createDirectories(BRIEFING_FILE.getParent());
             Files.writeString(BRIEFING_FILE, briefing);
+        } catch (IOException ignored) {
+            // clipboard copy is the fallback
+        }
+    }
+
+    private void writeLaunchScript(String projectPath) {
+        try {
+            Files.createDirectories(LAUNCH_SCRIPT.getParent());
+            Files.writeString(LAUNCH_SCRIPT, buildLaunchScript(projectPath));
+            LAUNCH_SCRIPT.toFile().setExecutable(true);
         } catch (IOException ignored) {
             // clipboard copy is the fallback
         }

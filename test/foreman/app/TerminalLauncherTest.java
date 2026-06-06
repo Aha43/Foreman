@@ -48,16 +48,25 @@ class TerminalLauncherTest {
     }
 
     @Test
-    void buildLaunchCommandContainsCdAndClaude() {
-        var cmd = MacOsTerminalLauncher.buildLaunchCommand("/home/user/myproject");
-        assertTrue(cmd.contains("cd '/home/user/myproject'"));
-        assertTrue(cmd.contains("$(cat '"));
-        assertTrue(cmd.contains("last-briefing.txt"));
+    void buildLaunchScriptContainsCdAndExec() {
+        var script = MacOsTerminalLauncher.buildLaunchScript("/home/user/myproject");
+        assertTrue(script.startsWith("#!/bin/bash\n"));
+        assertTrue(script.contains("cd '/home/user/myproject'"));
+        assertTrue(script.contains("exec '"));
+        assertTrue(script.contains("last-briefing.txt"));
     }
 
     @Test
-    void buildLaunchCommandEscapesPathSingleQuotes() {
-        var cmd = MacOsTerminalLauncher.buildLaunchCommand("/home/user/it's project");
-        assertTrue(cmd.contains("cd '/home/user/it'\\''s project'"));
+    void buildLaunchScriptEscapesPathSingleQuotes() {
+        var script = MacOsTerminalLauncher.buildLaunchScript("/home/user/it's project");
+        assertTrue(script.contains("cd '/home/user/it'\\''s project'"));
+    }
+
+    @Test
+    void buildLaunchScriptContainsNoBareDoubleQuotesAroundSubstitution() {
+        // double quotes around $(cat ...) must stay inside the bash script,
+        // not break the AppleScript string that wraps bash '/launch.sh'
+        var script = MacOsTerminalLauncher.buildLaunchScript("/home/user/project");
+        assertTrue(script.contains("\"$(cat '"));
     }
 }

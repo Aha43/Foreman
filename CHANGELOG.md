@@ -4,6 +4,9 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- Terminal no longer fails to launch after the Claude auto-start change: the shell command containing `"$(cat ...)"` was embedding double quotes inside an AppleScript double-quoted string, terminating it early; fix writes a real `~/.foreman/launch.sh` script and has AppleScript run `bash '/path/to/launch.sh'` instead, keeping double quotes safely inside the bash script
+
 ### Added
 - Launch now starts Claude Code automatically with the briefing as its initial message: writes briefing to `~/.foreman/last-briefing.txt`, then runs `claude "$(cat ~/.foreman/last-briefing.txt)"` in the new terminal window; `claude` binary resolved via `which claude` at startup; clipboard copy kept as fallback
 
