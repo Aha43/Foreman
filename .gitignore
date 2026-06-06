@@ -1,0 +1,56 @@
+sources.txt
+
+# === OS-specific ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Java build output ===
+*.class
+*.jar
+*.war
+*.ear
+
+# === Build / output directories ===
+/bin/
+/build/
+/out/
+target/
+
+# === Eclipse ===
+.classpath
+.project
+.settings/
+
+# === VS Code ===
+.vscode/
+
+# === IntelliJ IDEA ===
+.idea/
+*.iml
+
+# === Logs and temp files ===
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+*.bak
+*.old
+
+# === Maven / Gradle ===
+.mvn/
+.gradle/
+build/
+**/target/
+
+# === JVM crash logs ===
+hs_err_pid*
+replay_pid*
+
+# === Keep ===
+!.gitignore
+
+# === Distribution ===
+dist/
