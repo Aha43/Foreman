@@ -1,13 +1,14 @@
 package foreman.ui;
 
 import foreman.app.AppInfo;
+import foreman.app.ForemanWorkspaceService;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    public MainFrame() {
+    public MainFrame(ForemanWorkspaceService service) {
         super(AppInfo.NAME + " " + AppInfo.VERSION);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1024, 680);
