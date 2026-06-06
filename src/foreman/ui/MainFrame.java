@@ -30,7 +30,7 @@ public class MainFrame extends JFrame {
         var workspace    = service.getWorkspace();
         var listPanel    = new ProjectListPanel(workspace.projects());
         var detailPanel  = new ProjectDetailPanel();
-        var sessionPanel = new SessionPanel(service, sessionRegistry);
+        var sessionPanel = new SessionPanel(service, sessionRegistry, launcher);
 
         listPanel.onSelectionChanged(project -> {
             if (project != null) detailPanel.showProject(project);

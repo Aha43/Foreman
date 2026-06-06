@@ -71,4 +71,36 @@ class SessionRegistryTest {
         var id2 = registry.getSessions().get(0).id();
         assertEquals(id1, id2);
     }
+
+    @Test
+    void setRunningCreatesRunningSessionWhenAbsent() {
+        registry.setRunning("proj-1", "role-1", true);
+        var sessions = registry.getSessions();
+        assertEquals(1, sessions.size());
+        assertTrue(sessions.get(0).active());
+    }
+
+    @Test
+    void setRunningUpdatesExistingSession() {
+        registry.toggle("proj-1", "role-1"); // active=true
+        registry.setRunning("proj-1", "role-1", false);
+        assertFalse(registry.getSessions().get(0).active());
+    }
+
+    @Test
+    void setRunningPreservesSessionId() {
+        registry.toggle("proj-1", "role-1");
+        var id1 = registry.getSessions().get(0).id();
+        registry.setRunning("proj-1", "role-1", false);
+        registry.setRunning("proj-1", "role-1", true);
+        assertEquals(id1, registry.getSessions().get(0).id());
+    }
+
+    @Test
+    void setRunningNotifiesListeners() {
+        var called = new int[]{0};
+        registry.onChange(() -> called[0]++);
+        registry.setRunning("proj-1", "role-1", true);
+        assertEquals(1, called[0]);
+    }
 }

@@ -5,6 +5,12 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Session panel Launch/Focus buttons: "Launch" opens a titled Terminal.app window and copies the briefing to the clipboard; "Focus" brings the existing window to front; status shows `● Running` / `○ Stopped`
+- Startup restore: sessions whose Terminal.app windows survived a Foreman restart are automatically marked Running on launch
+- Non-macOS graceful fallback: when `TerminalLauncher.isSupported()` is false the panel keeps the old manual Active/Idle toggle
+- `SessionRegistry.setRunning()` to set session state directly (used by launch action and startup restore)
+
+### Added
 - `TerminalLauncher` interface with `MacOsTerminalLauncher` (osascript) and `NoOpTerminalLauncher` (stub) implementations
 - `MacOsTerminalLauncher`: `launch` opens a titled Terminal.app window and copies the briefing to the clipboard; `focus` brings an existing window to front; `exists` checks for a window by label
 - Window title convention: `Foreman · [Project] / [Role]`; single-quote escaping for shell-safe AppleScript embedding

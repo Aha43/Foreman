@@ -3,6 +3,7 @@ package foreman.ui;
 import foreman.app.BriefingService;
 import foreman.app.ForemanWorkspaceService;
 import foreman.app.SessionRegistry;
+import foreman.app.TerminalLauncher;
 import foreman.domain.Project;
 import foreman.domain.Role;
 
@@ -15,13 +16,16 @@ public class SessionPanel extends JPanel {
 
     private final ForemanWorkspaceService workspaceService;
     private final SessionRegistry registry;
+    private final TerminalLauncher launcher;
     private final BriefingService briefingService = new BriefingService();
     private final JPanel rowsPanel;
 
-    public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry) {
+    public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry,
+                        TerminalLauncher launcher) {
         super(new BorderLayout());
         this.workspaceService = workspaceService;
         this.registry = registry;
+        this.launcher = launcher;
 
         rowsPanel = new JPanel();
         rowsPanel.setLayout(new BoxLayout(rowsPanel, BoxLayout.Y_AXIS));
@@ -31,11 +35,22 @@ public class SessionPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         registry.onChange(this::rebuild);
+        if (launcher.isSupported()) restoreRunningState();
         rebuild();
     }
 
     public void reload() {
+        if (launcher.isSupported()) restoreRunningState();
         rebuild();
+    }
+
+    private void restoreRunningState() {
+        for (var project : workspaceService.getWorkspace().projects()) {
+            for (var assignment : project.team().assignments()) {
+                var label = sessionLabel(project.name(), assignment.label());
+                registry.setRunning(project.id(), assignment.roleId(), launcher.exists(label));
+            }
+        }
     }
 
     private void rebuild() {
@@ -79,7 +94,7 @@ public class SessionPanel extends JPanel {
         var session = registry.getSessions().stream()
                 .filter(s -> s.projectId().equals(row.projectId()) && s.roleId().equals(row.roleId()))
                 .findFirst();
-        var isActive = session.map(s -> s.active()).orElse(false);
+        var isRunning = session.map(s -> s.active()).orElse(false);
 
         var panel = new JPanel(new BorderLayout(8, 0));
         panel.setBorder(new EmptyBorder(8, 12, 8, 12));
@@ -87,18 +102,11 @@ public class SessionPanel extends JPanel {
 
         var projectLabel = new JLabel(row.projectName());
         var roleLabel    = new JLabel(row.roleLabel());
-        var statusLabel  = new JLabel(isActive ? "● Active" : "○ Idle");
-        statusLabel.setForeground(isActive
-                ? UIManager.getColor("Component.accentColor")
-                : UIManager.getColor("Label.disabledForeground"));
 
-        if (isActive) {
+        if (isRunning) {
             projectLabel.setFont(projectLabel.getFont().deriveFont(Font.BOLD));
             roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
         }
-
-        var toggleButton = new JButton(isActive ? "Set Idle" : "Set Active");
-        toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
 
         var briefButton = new JButton("Brief");
         briefButton.addActionListener(e -> {
@@ -110,8 +118,9 @@ public class SessionPanel extends JPanel {
             var project = workspace.projects().stream()
                     .filter(p -> p.id().equals(row.projectId()))
                     .findFirst()
-                    .orElseGet(() -> new foreman.domain.Project(
-                            row.projectId(), row.projectName(), row.projectPath(), "", new foreman.domain.Team(java.util.List.of())));
+                    .orElseGet(() -> new Project(
+                            row.projectId(), row.projectName(), row.projectPath(), "",
+                            new foreman.domain.Team(java.util.List.of())));
             var owner   = (Frame) SwingUtilities.getWindowAncestor(this);
             var briefing = briefingService.generate(project, role);
             BriefingDialog.show(owner, role.name(), project.name(), briefing);
@@ -125,13 +134,60 @@ public class SessionPanel extends JPanel {
 
         var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
-        right.add(statusLabel);
-        right.add(briefButton);
-        right.add(toggleButton);
+
+        if (launcher.isSupported()) {
+            var statusLabel = new JLabel(isRunning ? "● Running" : "○ Stopped");
+            statusLabel.setForeground(isRunning
+                    ? UIManager.getColor("Component.accentColor")
+                    : UIManager.getColor("Label.disabledForeground"));
+
+            var actionButton = new JButton(isRunning ? "Focus" : "Launch");
+            actionButton.addActionListener(e -> {
+                var label = sessionLabel(row.projectName(), row.roleLabel());
+                if (isRunning) {
+                    launcher.focus(label);
+                } else {
+                    var workspace = workspaceService.getWorkspace();
+                    var role = workspace.roles().stream()
+                            .filter(r -> r.id().equals(row.roleId()))
+                            .findFirst()
+                            .orElseGet(() -> new Role(row.roleId(), row.roleLabel(), "", null));
+                    var project = workspace.projects().stream()
+                            .filter(p -> p.id().equals(row.projectId()))
+                            .findFirst()
+                            .orElseGet(() -> new Project(
+                                    row.projectId(), row.projectName(), row.projectPath(), "",
+                                    new foreman.domain.Team(java.util.List.of())));
+                    var briefing = briefingService.generate(project, role);
+                    launcher.launch(row.projectPath(), label, briefing);
+                    registry.setRunning(row.projectId(), row.roleId(), true);
+                }
+            });
+
+            right.add(statusLabel);
+            right.add(briefButton);
+            right.add(actionButton);
+        } else {
+            var statusLabel = new JLabel(isRunning ? "● Active" : "○ Idle");
+            statusLabel.setForeground(isRunning
+                    ? UIManager.getColor("Component.accentColor")
+                    : UIManager.getColor("Label.disabledForeground"));
+
+            var toggleButton = new JButton(isRunning ? "Set Idle" : "Set Active");
+            toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
+
+            right.add(statusLabel);
+            right.add(briefButton);
+            right.add(toggleButton);
+        }
 
         panel.add(left, BorderLayout.CENTER);
         panel.add(right, BorderLayout.EAST);
 
         return panel;
+    }
+
+    static String sessionLabel(String projectName, String roleLabel) {
+        return "Foreman · " + projectName + " / " + roleLabel;
     }
 }

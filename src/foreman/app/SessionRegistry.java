@@ -17,6 +17,14 @@ public class SessionRegistry {
         listeners.forEach(Runnable::run);
     }
 
+    public void setRunning(String projectId, String roleId, boolean running) {
+        var key = projectId + ":" + roleId;
+        sessions.compute(key, (k, existing) -> existing == null
+                ? new Session(UUID.randomUUID().toString(), projectId, roleId, running)
+                : new Session(existing.id(), projectId, roleId, running));
+        listeners.forEach(Runnable::run);
+    }
+
     public List<Session> getSessions() {
         return List.copyOf(sessions.values());
     }
