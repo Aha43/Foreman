@@ -12,6 +12,8 @@ When working with multiple Claude Code roles on one or more projects, the practi
 - Wrong-chat errors — typing a message intended for the Planner into the Dev chat is easy when switching between sessions
 - Context drift — role instructions and CLAUDE.md files must be manually maintained and loaded into each session
 - Scaling — two projects means six or more concurrent sessions, making the above problems worse
+- External projects — using the same structured role workflow on a codebase you don't own
+  means you can't commit Foreman artifacts into it, so you lose the structure entirely
 
 ## What Foreman Does
 
@@ -35,6 +37,21 @@ Foreman manages three kinds of entities:
 - Foreman does not host or embed chat windows
 - Foreman does not send messages to Claude on the user's behalf
 - Foreman does not replace CLAUDE.md — it helps generate and maintain it
+
+## Sidecar Projects
+
+Not every project a Foreman user works on should have Foreman artifacts committed into it.
+For external codebases — client projects, open source repos, day-job projects — a sidecar
+is a Foreman-managed directory that holds the role definitions, design docs, and practices
+for that project, separate from the actual codebase.
+
+Foreman bridges the two: it knows both the project path (where you work) and the workflow
+path (where the roles and docs live). Briefings point the AI at both. The target repo
+stays untouched.
+
+This is a near-term priority once briefing generation is solid (#14), as there is an
+immediate real-world use case: applying the same structured team workflow to a day-job
+project without modifying that codebase.
 
 ## The Meta-Goal
 
