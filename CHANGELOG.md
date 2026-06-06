@@ -5,6 +5,10 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Right-click context menu on project list with "Remove project…" option; confirmation dialog before removal
+- Removing a project drops its sessions from `SessionRegistry` and refreshes the session panel
+
+### Added
 - Session panel: "Sessions" tab showing all project × role pairs with active/idle toggle; active rows shown bold with accent status indicator
 - `Session` domain record (in-memory, not persisted) and `SessionRegistry` with change notification
 - "Register Project" button in the project list panel; opens a dialog to pick a directory and name

@@ -28,6 +28,11 @@ public class ForemanWorkspaceService {
         this.workspace = workspace;
     }
 
+    public void removeProject(String projectId) {
+        workspace = workspace.withoutProject(projectId);
+        repository.save(workspace, workspacePath);
+    }
+
     public void save() {
         repository.save(workspace, workspacePath);
     }

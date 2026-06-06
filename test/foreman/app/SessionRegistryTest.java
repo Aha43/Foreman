@@ -52,6 +52,17 @@ class SessionRegistryTest {
     }
 
     @Test
+    void dropProjectRemovesAllSessionsForThatProject() {
+        registry.toggle("proj-1", "role-1");
+        registry.toggle("proj-1", "role-2");
+        registry.toggle("proj-2", "role-1");
+        registry.dropProject("proj-1");
+        var remaining = registry.getSessions();
+        assertEquals(1, remaining.size());
+        assertEquals("proj-2", remaining.get(0).projectId());
+    }
+
+    @Test
     void idIsStableAcrossToggles() {
         registry.toggle("proj-1", "role-1");
         var id1 = registry.getSessions().get(0).id();

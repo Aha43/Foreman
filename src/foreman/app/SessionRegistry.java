@@ -25,6 +25,10 @@ public class SessionRegistry {
         return sessions.values().stream().filter(Session::active).toList();
     }
 
+    public void dropProject(String projectId) {
+        sessions.keySet().removeIf(k -> k.startsWith(projectId + ":"));
+    }
+
     public void onChange(Runnable listener) {
         listeners.add(listener);
     }
