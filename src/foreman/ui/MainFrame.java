@@ -4,6 +4,7 @@ import foreman.app.AppInfo;
 import foreman.app.ForemanWorkspaceService;
 import foreman.app.ProjectRegistrationService;
 import foreman.app.RoleDiscoveryService;
+import foreman.app.SessionRegistry;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,10 +18,12 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
 
         var registrationService = new ProjectRegistrationService(new RoleDiscoveryService());
+        var sessionRegistry     = new SessionRegistry();
 
-        var workspace   = service.getWorkspace();
-        var listPanel   = new ProjectListPanel(workspace.projects());
-        var detailPanel = new ProjectDetailPanel();
+        var workspace      = service.getWorkspace();
+        var listPanel      = new ProjectListPanel(workspace.projects());
+        var detailPanel    = new ProjectDetailPanel();
+        var sessionPanel   = new SessionPanel(service, sessionRegistry);
 
         listPanel.onSelectionChanged(project -> {
             if (project != null) detailPanel.showProject(project);
@@ -33,13 +36,18 @@ public class MainFrame extends JFrame {
                 var project = registrationService.register(result.path(), result.name(), service);
                 listPanel.addProject(project);
                 detailPanel.showProject(project);
+                sessionPanel.reload();
             });
         });
 
         var selected = listPanel.getSelectedProject();
         if (selected != null) detailPanel.showProject(selected);
 
-        var split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listPanel, detailPanel);
+        var tabs = new JTabbedPane();
+        tabs.addTab("Project", detailPanel);
+        tabs.addTab("Sessions", sessionPanel);
+
+        var split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listPanel, tabs);
         split.setDividerLocation(240);
         split.setDividerSize(4);
 
