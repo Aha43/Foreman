@@ -4,6 +4,8 @@ import foreman.domain.Project;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -12,6 +14,7 @@ public class ProjectListPanel extends JPanel {
     private final DefaultListModel<Project> model = new DefaultListModel<>();
     private final JList<Project> list;
     private Runnable registerListener;
+    private Consumer<Project> removeListener;
 
     public ProjectListPanel(List<Project> projects) {
         super(new BorderLayout());
@@ -47,6 +50,24 @@ public class ProjectListPanel extends JPanel {
             list.setSelectedIndex(0);
         }
 
+        var contextMenu   = new JPopupMenu();
+        var removeItem    = new JMenuItem("Remove project…");
+        contextMenu.add(removeItem);
+        removeItem.addActionListener(e -> {
+            var project = list.getSelectedValue();
+            if (project != null && removeListener != null) removeListener.accept(project);
+        });
+        list.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e)  { maybeShowMenu(e); }
+            @Override public void mouseReleased(MouseEvent e) { maybeShowMenu(e); }
+            private void maybeShowMenu(MouseEvent e) {
+                if (!e.isPopupTrigger()) return;
+                var index = list.locationToIndex(e.getPoint());
+                if (index >= 0) list.setSelectedIndex(index);
+                if (list.getSelectedValue() != null) contextMenu.show(list, e.getX(), e.getY());
+            }
+        });
+
         var registerButton = new JButton("Register Project");
         registerButton.addActionListener(e -> { if (registerListener != null) registerListener.run(); });
 
@@ -62,9 +83,21 @@ public class ProjectListPanel extends JPanel {
         this.registerListener = listener;
     }
 
+    public void onRemove(Consumer<Project> listener) {
+        this.removeListener = listener;
+    }
+
     public void addProject(Project project) {
         model.addElement(project);
         list.setSelectedValue(project, true);
+    }
+
+    public void removeProject(Project project) {
+        var nextIndex = list.getSelectedIndex();
+        model.removeElement(project);
+        if (!model.isEmpty()) {
+            list.setSelectedIndex(Math.min(nextIndex, model.size() - 1));
+        }
     }
 
     public void onSelectionChanged(Consumer<Project> handler) {

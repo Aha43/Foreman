@@ -40,6 +40,20 @@ public class MainFrame extends JFrame {
             });
         });
 
+        listPanel.onRemove(project -> {
+            var answer = JOptionPane.showConfirmDialog(
+                    this,
+                    "Remove \"" + project.name() + "\" from workspace?",
+                    "Remove Project",
+                    JOptionPane.YES_NO_OPTION);
+            if (answer != JOptionPane.YES_OPTION) return;
+            service.removeProject(project.id());
+            sessionRegistry.dropProject(project.id());
+            listPanel.removeProject(project);
+            detailPanel.clearProject();
+            sessionPanel.reload();
+        });
+
         var selected = listPanel.getSelectedProject();
         if (selected != null) detailPanel.showProject(selected);
 
