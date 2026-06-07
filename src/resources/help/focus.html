@@ -1,0 +1,18 @@
+<h1>Focus</h1>
+
+<p>The <strong>Focus</strong> button appears on a session row when a terminal is already running
+for that project + role. Pressing it (or pressing <kbd>F</kbd> on a selected row) brings
+that terminal window to the front and activates Terminal.app.</p>
+
+<h2>How it works</h2>
+<p>Foreman records the TTY device of each terminal it opens. Focus uses AppleScript to
+find the Terminal.app window on that TTY and activate it. No new window is opened —
+you land exactly where you left off.</p>
+
+<h2>Stale sessions</h2>
+<p>If the terminal was closed since the last time Foreman checked, the row will flip
+back to <strong>Launch</strong> the next time Foreman's window gains focus. TTY numbers are
+recycled by the OS, so Foreman re-validates all sessions on window focus to avoid
+pointing at the wrong terminal.</p>
+
+<p>See also: <a href="concept://launch">Launch</a>, <a href="concept://what-is-a-session">What is a session?</a></p>

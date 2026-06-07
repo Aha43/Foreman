@@ -1,0 +1,29 @@
+<h1>Sidecar Projects</h1>
+
+<p>A sidecar lets you use Foreman's structured workflow on projects you don't own —
+client codebases, open-source repos, or any directory where adding a
+<code>docs/roles/</code> folder would be inappropriate.</p>
+
+<h2>The idea</h2>
+<p>Instead of putting role files inside the project, you keep them in a separate
+directory you control. Foreman reads roles from the sidecar but launches terminals
+pointed at the real project path.</p>
+
+<h2>Suggested layout</h2>
+<pre>
+~/foreman-sidecars/
+  their-repo/
+    docs/
+      roles/
+        dev.md
+        planning.md
+</pre>
+
+<h2>How to set it up</h2>
+<p>In the Register Project dialog, set the <strong>Project path</strong> to the target repo
+and the optional <strong>Workflow path</strong> to your sidecar directory. If you leave
+Workflow path blank, Foreman behaves as normal (roles discovered from the project root).</p>
+
+<h2>Briefing difference</h2>
+<p>When a sidecar is configured the briefing distinguishes the two paths so Claude Code
+knows where to work and where the workflow docs live.</p>

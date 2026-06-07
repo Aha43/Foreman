@@ -1,0 +1,17 @@
+<h1>GitHub Issues Integration</h1>
+
+<p>Foreman can include open GitHub issues in the briefing's task list so Claude Code
+knows what to work on without you having to copy issue numbers manually.</p>
+
+<h2>How to use it</h2>
+<p>In the <strong>Brief</strong> dialog (or before Launch), select the issues you want to include.
+Foreman fetches open issues from the GitHub repository associated with the project
+and lists them as <code>Closes #N — &lt;title&gt;</code> entries in the briefing.</p>
+
+<h2>Repository detection</h2>
+<p>Foreman reads the <code>.git/config</code> remote URL from the project directory to find
+the GitHub repo. If no remote is configured the issues section is omitted.</p>
+
+<h2>Authentication</h2>
+<p>Public repositories work without authentication. For private repositories Foreman
+uses the token stored in the system keychain (same as the GitHub CLI).</p>

@@ -1,0 +1,23 @@
+<h1>What Is a Session?</h1>
+
+<p>A session is one running instance of Claude Code for a specific project and role.
+If you have Foreman open with two projects each with three roles, you could have up
+to six sessions open simultaneously.</p>
+
+<h2>The problem sessions solve</h2>
+<p>Multiple unlabelled terminal tabs all running Claude Code look identical. Foreman
+solves this by opening each terminal itself, giving it a title, and tracking which
+terminal belongs to which project + role combination.</p>
+
+<h2>Session states</h2>
+<ul>
+  <li><strong>Stopped</strong> — no terminal window exists for this session. The row shows a <strong>Launch</strong> button.</li>
+  <li><strong>Running</strong> — a terminal window is open. The row shows a <strong>Focus</strong> button.</li>
+</ul>
+
+<h2>State detection</h2>
+<p>Foreman tracks sessions by the terminal's TTY device (e.g. <code>/dev/ttys004</code>),
+assigned at launch. State is in-memory: if Foreman restarts, all sessions reset to
+Stopped even if the terminals are still open.</p>
+
+<p>See also: <a href="concept://launch">Launch</a>, <a href="concept://focus">Focus</a></p>

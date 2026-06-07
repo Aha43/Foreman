@@ -1,0 +1,30 @@
+<h1>Role Discovery</h1>
+
+<p>When you register a project, Foreman scans <code>docs/roles/*.md</code> (non-recursive)
+and turns each file into a role in the shared library.</p>
+
+<h2>How a role name is derived</h2>
+<ol>
+  <li>If the first line of the file matches <code># Role: &lt;name&gt;</code> or <code># &lt;name&gt;</code>, that name is used.</li>
+  <li>Otherwise the filename is used: <code>.md</code> is stripped, hyphens and underscores become spaces, and the result is title-cased.</li>
+</ol>
+
+<h2>Deduplication</h2>
+<p>Roles are shared across projects. If two projects both have a <code>dev.md</code> with the
+heading <code># Dev</code>, Foreman creates one "Dev" role and assigns it to both teams.
+The first-registered version of the instructions wins.</p>
+
+<h2>Role instructions</h2>
+<p>The entire file content (markdown) becomes the role's instruction text. This is what
+Foreman includes in the briefing pasted into Claude Code on
+<a href="concept://launch">Launch</a>.</p>
+
+<h2>Convention</h2>
+<pre>
+&lt;project-root&gt;/
+  docs/
+    roles/
+      planning.md
+      dev.md
+      dogfooding.md
+</pre>

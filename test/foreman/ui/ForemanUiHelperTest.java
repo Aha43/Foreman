@@ -57,7 +57,7 @@ class ForemanUiHelperTest {
 
     @Test
     void isDenseNullSafe() {
-        var s = new foreman.app.ForemanSettings("/path", null);
+        var s = new foreman.app.ForemanSettings("/path", null, null, null, null, null);
         assertFalse(s.isDense());
     }
 }
