@@ -11,6 +11,8 @@ import foreman.app.TerminalLauncher;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -30,7 +32,7 @@ public class MainFrame extends JFrame {
         var sessionRegistry     = new SessionRegistry();
 
         var workspace    = service.getWorkspace();
-        var listPanel    = new ProjectListPanel(workspace.projects());
+        var listPanel    = new ProjectListPanel(workspace.projects(), sessionRegistry);
         var detailPanel  = new ProjectDetailPanel();
         var sessionPanel = new SessionPanel(service, sessionRegistry, launcher);
 
@@ -60,7 +62,7 @@ public class MainFrame extends JFrame {
         var toolbar = new JToolBar();
         toolbar.setFloatable(false);
 
-        var registerBtn = new JButton("Register Project");
+        var registerBtn = ForemanUiHelper.iconButton("Register Project", ForemanUiHelper.icon("folder-plus"));
         registerBtn.addActionListener(e -> {
             var initialDir = java.nio.file.Path.of(settingsService.get().defaultProjectDir());
             RegisterProjectDialog.show(this, initialDir).ifPresent(result -> {
@@ -68,22 +70,42 @@ public class MainFrame extends JFrame {
                 listPanel.addProject(project);
                 detailPanel.showProject(project);
                 sessionPanel.reload();
+                var assignments = project.team().assignments();
+                if (assignments.isEmpty()) {
+                    listPanel.showFeedback("Registered " + project.name()
+                            + " — no roles discovered (docs/roles/ not found)");
+                } else {
+                    var labels = assignments.stream()
+                            .map(a -> a.label())
+                            .collect(java.util.stream.Collectors.joining(", "));
+                    listPanel.showFeedback("Registered " + project.name()
+                            + " — found " + assignments.size()
+                            + (assignments.size() == 1 ? " role: " : " roles: ") + labels);
+                }
                 var parent = result.path().getParent();
                 if (parent != null) {
-                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString()));
+                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString(), settingsService.get().isDense()));
                 }
             });
         });
 
-        var settingsBtn = new JButton("Settings");
+        var settingsBtn = ForemanUiHelper.iconButton("Settings", ForemanUiHelper.icon("settings"));
         settingsBtn.addActionListener(e -> SettingsDialog.show(this, settingsService));
 
-        var exitBtn = new JButton("Exit");
+        var shortcutsBtn = ForemanUiHelper.iconButton("Shortcuts", ForemanUiHelper.icon("keyboard"));
+        shortcutsBtn.addActionListener(e -> ShortcutsDialog.show(this));
+
+        var aboutBtn = ForemanUiHelper.iconButton("About", ForemanUiHelper.icon("info-circle"));
+        aboutBtn.addActionListener(e -> AboutDialog.show(this));
+
+        var exitBtn = ForemanUiHelper.iconButton("Exit", ForemanUiHelper.icon("logout"));
         exitBtn.addActionListener(e -> System.exit(0));
 
         toolbar.add(registerBtn);
         toolbar.add(settingsBtn);
+        toolbar.add(shortcutsBtn);
         toolbar.add(Box.createHorizontalGlue());
+        toolbar.add(aboutBtn);
         toolbar.add(exitBtn);
 
         var tabs = new JTabbedPane();
@@ -102,6 +124,36 @@ public class MainFrame extends JFrame {
             public void windowGainedFocus(WindowEvent e) {
                 sessionPanel.reload();
             }
+        });
+
+        var mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        var im   = getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        var am   = getRootPane().getActionMap();
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_R,     mask), "shortcut_register");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, mask), "shortcut_settings");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q,     mask), "shortcut_quit");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, mask), "shortcut_keyboard");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_W,     mask), "shortcut_close");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F1,    0),    "shortcut_about");
+        am.put("shortcut_register", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { registerBtn.doClick(); }
+        });
+        am.put("shortcut_settings", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { settingsBtn.doClick(); }
+        });
+        am.put("shortcut_quit", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { exitBtn.doClick(); }
+        });
+        am.put("shortcut_keyboard", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { ShortcutsDialog.show(MainFrame.this); }
+        });
+        am.put("shortcut_close", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                dispatchEvent(new WindowEvent(MainFrame.this, WindowEvent.WINDOW_CLOSING));
+            }
+        });
+        am.put("shortcut_about", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { AboutDialog.show(MainFrame.this); }
         });
     }
 }

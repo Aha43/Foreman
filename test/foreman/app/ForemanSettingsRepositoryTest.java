@@ -15,15 +15,26 @@ class ForemanSettingsRepositoryTest {
     void loadReturnsDefaultsWhenFileAbsent(@TempDir Path dir) {
         var settings = repo.load(dir.resolve("settings.json"));
         assertEquals(System.getProperty("user.home"), settings.defaultProjectDir());
+        assertFalse(settings.isDense());
     }
 
     @Test
-    void roundTripPreservesDefaultProjectDir(@TempDir Path dir) {
-        var original = new ForemanSettings("/custom/projects");
+    void roundTripPreservesAllFields(@TempDir Path dir) {
+        var original = new ForemanSettings("/custom/projects", true);
         var file = dir.resolve("settings.json");
         repo.save(original, file);
         var loaded = repo.load(file);
         assertEquals("/custom/projects", loaded.defaultProjectDir());
+        assertTrue(loaded.isDense());
+    }
+
+    @Test
+    void denseDefaultsToFalseWhenMissingFromJson(@TempDir Path dir) throws Exception {
+        var file = dir.resolve("settings.json");
+        java.nio.file.Files.writeString(file, "{\"defaultProjectDir\":\"/old/path\"}");
+        var loaded = repo.load(file);
+        assertEquals("/old/path", loaded.defaultProjectDir());
+        assertFalse(loaded.isDense());
     }
 
     @Test

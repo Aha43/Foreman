@@ -1,6 +1,7 @@
 package foreman.app;
 
 import com.formdev.flatlaf.FlatDarkLaf;
+import foreman.ui.ForemanUiHelper;
 import foreman.ui.MainFrame;
 
 import javax.swing.*;
@@ -15,6 +16,7 @@ public class ForemanMain {
         var launcher         = System.getProperty("os.name", "").toLowerCase().contains("mac")
                 ? (TerminalLauncher) new MacOsTerminalLauncher()
                 : new NoOpTerminalLauncher();
+        ForemanUiHelper.init(settingsService.get().isDense());
         FlatDarkLaf.setup();
         SwingUtilities.invokeLater(() -> {
             var frame = new MainFrame(workspaceService, settingsService, launcher);

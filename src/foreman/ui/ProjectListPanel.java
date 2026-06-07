@@ -1,5 +1,6 @@
 package foreman.ui;
 
+import foreman.app.SessionRegistry;
 import foreman.domain.Project;
 
 import javax.swing.*;
@@ -13,9 +14,10 @@ public class ProjectListPanel extends JPanel {
 
     private final DefaultListModel<Project> model = new DefaultListModel<>();
     private final JList<Project> list;
+    private final JLabel statusLabel = new JLabel();
     private Consumer<Project> removeListener;
 
-    public ProjectListPanel(List<Project> projects) {
+    public ProjectListPanel(List<Project> projects, SessionRegistry sessionRegistry) {
         super(new BorderLayout());
         projects.forEach(model::addElement);
 
@@ -34,15 +36,51 @@ public class ProjectListPanel extends JPanel {
             }
         };
 
-        list.setCellRenderer(new DefaultListCellRenderer() {
+        list.setCellRenderer(new ListCellRenderer<Project>() {
+            private final JPanel cell       = new JPanel(new BorderLayout(8, 0));
+            private final JLabel nameLabel  = new JLabel();
+            private final JLabel badgeLabel = new JLabel();
+
+            {
+                cell.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                cell.add(nameLabel, BorderLayout.CENTER);
+                cell.add(badgeLabel, BorderLayout.EAST);
+            }
+
             @Override
-            public Component getListCellRendererComponent(
-                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setText(((Project) value).name());
-                return this;
+            public Component getListCellRendererComponent(JList<? extends Project> list, Project value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                nameLabel.setText(value.name());
+
+                var count = (int) sessionRegistry.getActiveSessions().stream()
+                        .filter(s -> s.projectId().equals(value.id()))
+                        .count();
+                if (count > 0) {
+                    badgeLabel.setText("● " + count);
+                    badgeLabel.setForeground(UIManager.getColor("Component.accentColor"));
+                } else {
+                    badgeLabel.setText("○");
+                    badgeLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+                }
+
+                cell.setOpaque(true);
+                if (isSelected) {
+                    cell.setBackground(list.getSelectionBackground());
+                    nameLabel.setForeground(list.getSelectionForeground());
+                } else {
+                    cell.setBackground(list.getBackground());
+                    nameLabel.setForeground(list.getForeground());
+                }
+
+                return cell;
             }
         });
+
+        sessionRegistry.onChange(list::repaint);
+
+        statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        statusLabel.setVisible(false);
 
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         if (!model.isEmpty()) {
@@ -68,6 +106,7 @@ public class ProjectListPanel extends JPanel {
         });
 
         add(new JScrollPane(list), BorderLayout.CENTER);
+        add(statusLabel, BorderLayout.SOUTH);
     }
 
     public void onRemove(Consumer<Project> listener) {
@@ -87,9 +126,15 @@ public class ProjectListPanel extends JPanel {
         }
     }
 
+    public void showFeedback(String message) {
+        statusLabel.setText("<html>" + message + "</html>");
+        statusLabel.setVisible(true);
+    }
+
     public void onSelectionChanged(Consumer<Project> handler) {
         list.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
+                statusLabel.setVisible(false);
                 handler.accept(list.getSelectedValue());
             }
         });

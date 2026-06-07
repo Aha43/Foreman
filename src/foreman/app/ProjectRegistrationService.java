@@ -30,7 +30,7 @@ public class ProjectRegistrationService {
                 roles.add(candidate);
                 return candidate;
             });
-            assignments.add(new RoleAssignment(role.id(), role.name()));
+            assignments.add(new RoleAssignment(role.id(), displayLabel(role.name())));
         }
 
         var project = new Project(
@@ -45,5 +45,12 @@ public class ProjectRegistrationService {
         workspaceService.setWorkspace(new ForemanWorkspace(roles, projects));
         workspaceService.save();
         return project;
+    }
+
+    static String displayLabel(String roleName) {
+        if (roleName.toLowerCase().endsWith(" chat")) {
+            return roleName.substring(0, roleName.length() - 5).strip();
+        }
+        return roleName;
     }
 }

@@ -4,6 +4,17 @@ All notable changes to Foreman are documented here.
 
 ## [Unreleased]
 
+### Added
+- Role display labels strip a trailing " Chat" suffix on registration (e.g. "Dev Chat" → "Dev" in the session panel); the canonical role name is preserved for deduplication
+- About dialog (F1 or toolbar button) shows app name and version; supports ⌘W to close
+- Registration discovery feedback: after registering a project, the project list shows an inline message with the roles found (or a "no roles discovered" notice if docs/roles/ is absent); message clears on next project selection
+- Project list shows a running session count badge next to each project name: `● N` in accent colour when N > 0, `○` in muted colour otherwise; badge updates live when sessions are launched or stopped
+- Icon infrastructure: `ForemanUiHelper` with `iconButton()` / `iconOnlyButton()` / `icon()` / `applyDense()` factory methods; 8 Tabler Icons SVGs downloaded to `src/icons/` and bundled into the JAR
+- Dense mode: Settings dialog checkbox toggles icon-only buttons app-wide; setting persisted to `~/.foreman/settings.json`; `ForemanSettings` gains `Boolean dense` field (null-safe for old JSON)
+- Toolbar buttons (Register Project, Settings, Exit) and session panel buttons (Launch, Focus, Brief) now show SVG icons via `ForemanUiHelper.iconButton()`; text labels are hidden in dense mode, leaving only the icon
+- Session panel groups rows by project: bold project name header with muted background and separator, 8px gap between groups; role name shown per row without redundant project prefix
+- Keyboard shortcuts wired on main window root pane: ⌘R Register Project, ⌘, Settings, ⌘Q Exit, ⌘/ Shortcuts dialog, ⌘W Close; session panel row shortcuts L/F/B (Launch, Focus, Brief) operate on the clicked row; ShortcutsDialog accessible via toolbar keyboard button or ⌘/
+
 ### Fixed
 - Sessions no longer show as Running after Foreman restart: TTY map is now in-memory only; macOS recycles /dev/ttysN devices so persisting them caused stale matches against unrelated terminals on restart
 - Closing a terminal no longer leaves the row stuck on "Focus": Foreman reloads session state whenever its window regains focus, detecting closed TTYs and flipping rows back to "Launch"

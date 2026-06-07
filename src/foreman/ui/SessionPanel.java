@@ -10,7 +10,10 @@ import foreman.domain.Role;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.ArrayList;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class SessionPanel extends JPanel {
 
@@ -19,6 +22,12 @@ public class SessionPanel extends JPanel {
     private final TerminalLauncher launcher;
     private final BriefingService briefingService = new BriefingService();
     private final JPanel rowsPanel;
+
+    private String   selectedProjectId;
+    private String   selectedRoleId;
+    private Runnable selectedLaunchAction = () -> {};
+    private Runnable selectedFocusAction  = () -> {};
+    private Runnable selectedBriefAction  = () -> {};
 
     public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry,
                         TerminalLauncher launcher) {
@@ -35,6 +44,22 @@ public class SessionPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         registry.onChange(this::rebuild);
+
+        var im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        var am = getActionMap();
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "row_launch");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0), "row_focus");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_B, 0), "row_brief");
+        am.put("row_launch", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedLaunchAction.run(); }
+        });
+        am.put("row_focus", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedFocusAction.run(); }
+        });
+        am.put("row_brief", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedBriefAction.run(); }
+        });
+
         rebuild();
     }
 
@@ -53,21 +78,35 @@ public class SessionPanel extends JPanel {
     }
 
     private void rebuild() {
+        selectedLaunchAction = () -> {};
+        selectedFocusAction  = () -> {};
+        selectedBriefAction  = () -> {};
         rowsPanel.removeAll();
 
         var projects = workspaceService.getWorkspace().projects();
-        var rows = collectRows(projects);
+        var hasAny = false;
+        for (var p : projects) if (!p.team().assignments().isEmpty()) { hasAny = true; break; }
 
-        if (rows.isEmpty()) {
+        if (!hasAny) {
             var empty = new JLabel("No sessions registered. Select a project and mark a role as active.");
             empty.setHorizontalAlignment(SwingConstants.CENTER);
             empty.setForeground(UIManager.getColor("Label.disabledForeground"));
             empty.setBorder(new EmptyBorder(24, 16, 24, 16));
             rowsPanel.add(empty);
         } else {
-            for (var row : rows) {
-                rowsPanel.add(buildRow(row));
+            String lastId = null;
+            for (var project : projects) {
+                if (project.team().assignments().isEmpty()) continue;
+                if (lastId != null) rowsPanel.add(Box.createVerticalStrut(8));
+                lastId = project.id();
+                rowsPanel.add(buildGroupHeader(project.name()));
                 rowsPanel.add(new JSeparator());
+                for (var assignment : project.team().assignments()) {
+                    var row = new RowData(project.id(), project.name(), project.path(),
+                            assignment.roleId(), assignment.label());
+                    rowsPanel.add(buildRow(row));
+                    rowsPanel.add(new JSeparator());
+                }
             }
         }
 
@@ -75,19 +114,21 @@ public class SessionPanel extends JPanel {
         rowsPanel.repaint();
     }
 
+    private JPanel buildGroupHeader(String projectName) {
+        var panel = new JPanel(new BorderLayout());
+        panel.setOpaque(true);
+        var bg = UIManager.getColor("Table.alternateRowBackground");
+        if (bg == null) bg = UIManager.getColor("Panel.background");
+        panel.setBackground(bg);
+        panel.setBorder(new EmptyBorder(6, 12, 6, 12));
+        var label = new JLabel(projectName);
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        panel.add(label, BorderLayout.WEST);
+        return panel;
+    }
+
     private record RowData(String projectId, String projectName, String projectPath,
                            String roleId, String roleLabel) {}
-
-    private java.util.List<RowData> collectRows(java.util.List<Project> projects) {
-        var rows = new ArrayList<RowData>();
-        for (var project : projects) {
-            for (var assignment : project.team().assignments()) {
-                rows.add(new RowData(project.id(), project.name(), project.path(),
-                        assignment.roleId(), assignment.label()));
-            }
-        }
-        return rows;
-    }
 
     private JPanel buildRow(RowData row) {
         var session = registry.getSessions().stream()
@@ -99,15 +140,14 @@ public class SessionPanel extends JPanel {
         panel.setBorder(new EmptyBorder(8, 12, 8, 12));
         panel.setOpaque(true);
 
-        var projectLabel = new JLabel(row.projectName());
-        var roleLabel    = new JLabel(row.roleLabel());
+        var isSelected = row.projectId().equals(selectedProjectId)
+                && row.roleId().equals(selectedRoleId);
+        if (isSelected) panel.setBackground(UIManager.getColor("List.selectionBackground"));
 
-        if (isRunning) {
-            projectLabel.setFont(projectLabel.getFont().deriveFont(Font.BOLD));
-            roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
-        }
+        var roleLabel = new JLabel(row.roleLabel());
+        if (isRunning) roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
 
-        var briefButton = new JButton("Brief");
+        var briefButton = ForemanUiHelper.iconButton("Brief", ForemanUiHelper.icon("notes"));
         briefButton.addActionListener(e -> {
             var workspace = workspaceService.getWorkspace();
             var role = workspace.roles().stream()
@@ -124,11 +164,10 @@ public class SessionPanel extends JPanel {
             var briefing = briefingService.generate(project, role);
             BriefingDialog.show(owner, role.name(), project.name(), briefing);
         });
+        if (isSelected) selectedBriefAction = briefButton::doClick;
 
         var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        left.add(projectLabel);
-        left.add(new JLabel("/"));
         left.add(roleLabel);
 
         var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -140,7 +179,9 @@ public class SessionPanel extends JPanel {
                     ? UIManager.getColor("Component.accentColor")
                     : UIManager.getColor("Label.disabledForeground"));
 
-            var actionButton = new JButton(isRunning ? "Focus" : "Launch");
+            var actionButton = ForemanUiHelper.iconButton(
+                    isRunning ? "Focus" : "Launch",
+                    ForemanUiHelper.icon(isRunning ? "focus-2" : "terminal-2"));
             actionButton.addActionListener(e -> {
                 var label = sessionLabel(row.projectName(), row.roleLabel());
                 if (isRunning) {
@@ -162,6 +203,10 @@ public class SessionPanel extends JPanel {
                     registry.setRunning(row.projectId(), row.roleId(), true);
                 }
             });
+            if (isSelected) {
+                selectedLaunchAction = actionButton::doClick;
+                selectedFocusAction  = isRunning ? actionButton::doClick : () -> {};
+            }
 
             right.add(statusLabel);
             right.add(briefButton);
@@ -174,6 +219,10 @@ public class SessionPanel extends JPanel {
 
             var toggleButton = new JButton(isRunning ? "Set Idle" : "Set Active");
             toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
+            if (isSelected) {
+                selectedLaunchAction = toggleButton::doClick;
+                selectedFocusAction  = () -> {};
+            }
 
             right.add(statusLabel);
             right.add(briefButton);
@@ -182,6 +231,17 @@ public class SessionPanel extends JPanel {
 
         panel.add(left, BorderLayout.CENTER);
         panel.add(right, BorderLayout.EAST);
+
+        var selectListener = new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                selectedProjectId = row.projectId();
+                selectedRoleId    = row.roleId();
+                rebuild();
+            }
+        };
+        panel.addMouseListener(selectListener);
+        left.addMouseListener(selectListener);
+        for (var c : left.getComponents()) c.addMouseListener(selectListener);
 
         return panel;
     }
