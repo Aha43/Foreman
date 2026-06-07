@@ -2,6 +2,10 @@ package foreman.app;
 
 import foreman.domain.*;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -85,6 +89,33 @@ public class ProjectRegistrationService {
         workspaceService.setWorkspace(new ForemanWorkspace(roles, updatedProjects));
         workspaceService.save();
         return updated;
+    }
+
+    public Project initForeman(Path projectPath, String name, String workflowPath,
+                               ForemanWorkspaceService workspaceService) {
+        var workflowRoot = (workflowPath != null && !workflowPath.isBlank())
+                ? Path.of(workflowPath) : projectPath;
+        try {
+            Files.createDirectories(projectPath);
+            Files.createDirectories(workflowRoot.resolve("docs/roles"));
+            var templateDest = workflowRoot.resolve("docs/roles/foreman.md");
+            if (!Files.exists(templateDest)) {
+                Files.writeString(templateDest, loadForemanTemplate());
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return register(projectPath, name, workflowPath, workspaceService);
+    }
+
+    private String loadForemanTemplate() {
+        var url = getClass().getResource("/resources/foreman-role-template.md");
+        if (url == null) return "# Role: Foreman\n";
+        try (var in = url.openStream()) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     static String displayLabel(String roleName) {

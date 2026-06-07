@@ -37,6 +37,46 @@ class ProjectRegistrationServiceTest {
         assertEquals("ChatBot", ProjectRegistrationService.displayLabel("ChatBot"));
     }
 
+    // initForeman tests
+
+    @Test
+    void initForemanCreatesDirectoryAndWritesTemplate(@TempDir Path root) throws IOException {
+        var projectPath = root.resolve("my-project");
+        var workspaceService = workspaceWith(root, List.of());
+        var project = service.initForeman(projectPath, "My Project", null, workspaceService);
+
+        assertTrue(Files.isDirectory(projectPath));
+        var templateDest = projectPath.resolve("docs/roles/foreman.md");
+        assertTrue(Files.exists(templateDest));
+        assertTrue(Files.readString(templateDest).contains("Foreman"));
+        assertEquals("My Project", project.name());
+        assertEquals(1, project.team().assignments().size());
+    }
+
+    @Test
+    void initForemanDoesNotOverwriteExistingTemplate(@TempDir Path root) throws IOException {
+        var projectPath = root.resolve("my-project");
+        Files.createDirectories(projectPath.resolve("docs/roles"));
+        var existing = projectPath.resolve("docs/roles/foreman.md");
+        Files.writeString(existing, "# Custom content");
+
+        var workspaceService = workspaceWith(root, List.of());
+        service.initForeman(projectPath, "My Project", null, workspaceService);
+
+        assertEquals("# Custom content", Files.readString(existing));
+    }
+
+    @Test
+    void initForemanRegistersProjectInWorkspace(@TempDir Path root) throws IOException {
+        var projectPath = root.resolve("my-project");
+        var workspaceService = workspaceWith(root, List.of());
+        var project = service.initForeman(projectPath, "My Project", null, workspaceService);
+
+        var projects = workspaceService.getWorkspace().projects();
+        assertEquals(1, projects.size());
+        assertEquals(project.id(), projects.get(0).id());
+    }
+
     // rescan tests
 
     @Test
