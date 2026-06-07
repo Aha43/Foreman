@@ -12,10 +12,12 @@ public class SettingsDialog extends JDialog {
     private SettingsDialog(Frame owner, ForemanSettingsService settingsService) {
         super(owner, "Settings", true);
 
-        var current   = settingsService.get();
-        var dirField  = new JTextField(current.defaultProjectDir(), 30);
-        var denseCheck = new JCheckBox("Dense mode (icon-only buttons)");
-        denseCheck.setSelected(current.isDense());
+        var current       = settingsService.get();
+        var originalDense = current.isDense();
+        var dirField      = new JTextField(current.defaultProjectDir(), 30);
+        var denseCheck    = new JCheckBox("Dense mode (icon-only buttons)");
+        denseCheck.setSelected(originalDense);
+        denseCheck.addChangeListener(e -> ForemanUiHelper.applyDense(denseCheck.isSelected()));
 
         var browseButton = new JButton("Browse…");
         browseButton.addActionListener(e -> {
@@ -29,11 +31,12 @@ public class SettingsDialog extends JDialog {
 
         var okButton     = new JButton("OK");
         var cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dispose());
+        cancelButton.addActionListener(e -> {
+            ForemanUiHelper.applyDense(originalDense);
+            dispose();
+        });
         okButton.addActionListener(e -> {
-            var dense = denseCheck.isSelected();
-            settingsService.update(new ForemanSettings(dirField.getText().strip(), dense));
-            ForemanUiHelper.applyDense(dense);
+            settingsService.update(new ForemanSettings(dirField.getText().strip(), denseCheck.isSelected()));
             dispose();
         });
         getRootPane().setDefaultButton(okButton);
