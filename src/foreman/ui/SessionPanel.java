@@ -19,6 +19,8 @@ import java.util.Set;
 
 public class SessionPanel extends JPanel {
 
+    static final String HUMAN_ROLE_ID = "__human__";
+
     private final ForemanWorkspaceService workspaceService;
     private final SessionRegistry registry;
     private final TerminalLauncher launcher;
@@ -78,6 +80,8 @@ public class SessionPanel extends JPanel {
                 var label = sessionLabel(project.name(), assignment.label());
                 registry.setRunning(project.id(), assignment.roleId(), launcher.exists(label));
             }
+            var humanLabel = sessionLabel(project.name(), "Human");
+            registry.setRunning(project.id(), HUMAN_ROLE_ID, launcher.exists(humanLabel));
         }
     }
 
@@ -88,11 +92,9 @@ public class SessionPanel extends JPanel {
         rowsPanel.removeAll();
 
         var projects = workspaceService.getWorkspace().projects();
-        var hasAny = false;
-        for (var p : projects) if (!p.team().assignments().isEmpty()) { hasAny = true; break; }
 
-        if (!hasAny) {
-            var empty = new JLabel("No sessions registered. Select a project and mark a role as active.");
+        if (projects.isEmpty()) {
+            var empty = new JLabel("No projects registered yet.");
             empty.setHorizontalAlignment(SwingConstants.CENTER);
             empty.setForeground(UIManager.getColor("Label.disabledForeground"));
             empty.setBorder(new EmptyBorder(24, 16, 24, 16));
@@ -100,7 +102,6 @@ public class SessionPanel extends JPanel {
         } else {
             String lastId = null;
             for (var project : projects) {
-                if (project.team().assignments().isEmpty()) continue;
                 if (lastId != null) rowsPanel.add(Box.createVerticalStrut(8));
                 lastId = project.id();
                 rowsPanel.add(buildGroupHeader(project.id(), project.name()));
@@ -112,6 +113,8 @@ public class SessionPanel extends JPanel {
                         rowsPanel.add(buildRow(row));
                         rowsPanel.add(new JSeparator());
                     }
+                    rowsPanel.add(buildHumanRow(project));
+                    rowsPanel.add(new JSeparator());
                 }
             }
         }
@@ -261,6 +264,92 @@ public class SessionPanel extends JPanel {
             @Override public void mouseClicked(MouseEvent e) {
                 selectedProjectId = row.projectId();
                 selectedRoleId    = row.roleId();
+                rebuild();
+            }
+        };
+        panel.addMouseListener(selectListener);
+        left.addMouseListener(selectListener);
+        for (var c : left.getComponents()) c.addMouseListener(selectListener);
+
+        return panel;
+    }
+
+    private JPanel buildHumanRow(Project project) {
+        var session = registry.getSessions().stream()
+                .filter(s -> s.projectId().equals(project.id()) && s.roleId().equals(HUMAN_ROLE_ID))
+                .findFirst();
+        var isRunning = session.map(s -> s.active()).orElse(false);
+
+        var panel = new JPanel(new BorderLayout(8, 0));
+        panel.setBorder(new EmptyBorder(8, 12, 8, 12));
+        panel.setOpaque(true);
+
+        var isSelected = project.id().equals(selectedProjectId)
+                && HUMAN_ROLE_ID.equals(selectedRoleId);
+        if (isSelected) panel.setBackground(UIManager.getColor("List.selectionBackground"));
+
+        var userIcon  = ForemanUiHelper.icon("user");
+        var iconLabel = userIcon != null ? new JLabel(userIcon) : new JLabel();
+        var textLabel = new JLabel("Human");
+        if (isRunning) textLabel.setFont(textLabel.getFont().deriveFont(Font.BOLD));
+
+        var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
+        left.add(iconLabel);
+        left.add(textLabel);
+
+        var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+
+        if (launcher.isSupported()) {
+            var statusLabel = new JLabel(isRunning ? "● Running" : "○ Stopped");
+            statusLabel.setForeground(isRunning
+                    ? UIManager.getColor("Component.accentColor")
+                    : UIManager.getColor("Label.disabledForeground"));
+
+            var actionButton = ForemanUiHelper.iconButton(
+                    isRunning ? "Focus" : "Launch",
+                    ForemanUiHelper.icon(isRunning ? "focus-2" : "terminal-2"));
+            actionButton.addActionListener(e -> {
+                var label = sessionLabel(project.name(), "Human");
+                if (isRunning) {
+                    launcher.focus(label);
+                } else {
+                    launcher.launchShell(project.path(), label);
+                    registry.setRunning(project.id(), HUMAN_ROLE_ID, true);
+                }
+            });
+            if (isSelected) {
+                selectedLaunchAction = actionButton::doClick;
+                selectedFocusAction  = isRunning ? actionButton::doClick : () -> {};
+            }
+
+            right.add(statusLabel);
+            right.add(actionButton);
+        } else {
+            var statusLabel = new JLabel(isRunning ? "● Active" : "○ Idle");
+            statusLabel.setForeground(isRunning
+                    ? UIManager.getColor("Component.accentColor")
+                    : UIManager.getColor("Label.disabledForeground"));
+
+            var toggleButton = new JButton(isRunning ? "Set Idle" : "Set Active");
+            toggleButton.addActionListener(e -> registry.toggle(project.id(), HUMAN_ROLE_ID));
+            if (isSelected) {
+                selectedLaunchAction = toggleButton::doClick;
+                selectedFocusAction  = () -> {};
+            }
+
+            right.add(statusLabel);
+            right.add(toggleButton);
+        }
+
+        panel.add(left, BorderLayout.CENTER);
+        panel.add(right, BorderLayout.EAST);
+
+        var selectListener = new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                selectedProjectId = project.id();
+                selectedRoleId    = HUMAN_ROLE_ID;
                 rebuild();
             }
         };
