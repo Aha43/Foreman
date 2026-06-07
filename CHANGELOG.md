@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Role display labels strip a trailing " Chat" suffix on registration (e.g. "Dev Chat" → "Dev" in the session panel); the canonical role name is preserved for deduplication
 - About dialog (F1 or toolbar button) shows app name and version; supports ⌘W to close
 - Registration discovery feedback: after registering a project, the project list shows an inline message with the roles found (or a "no roles discovered" notice if docs/roles/ is absent); message clears on next project selection
 - Project list shows a running session count badge next to each project name: `● N` in accent colour when N > 0, `○` in muted colour otherwise; badge updates live when sessions are launched or stopped
