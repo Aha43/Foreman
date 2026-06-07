@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Role content viewer: selecting a role in the project detail panel shows its instruction content; reads from disk when the file can be located, falls back to workspace-stored instructions otherwise; "Role file not found — try Rescan" shown only when no content is available at all
 - Sidecar workflow path: projects can now have an optional separate workflow directory for role docs and design docs, decoupling the AI team workflow from the target codebase; Register Project dialog gains an optional "Workflow path" field; briefing distinguishes working directory from workflow docs when they differ; project detail panel shows the workflow path when set
 - Settings dialog: toggling dense mode now applies immediately so the toolbar updates live behind the dialog; Cancel reverts to the original setting
 - Session panel: project group headers are now collapsible — click the header (or ▼/▶ chevron) to hide/show its role rows; all groups start expanded and state resets on restart
