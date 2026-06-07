@@ -10,6 +10,10 @@ import foreman.domain.Role;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 public class SessionPanel extends JPanel {
@@ -19,6 +23,12 @@ public class SessionPanel extends JPanel {
     private final TerminalLauncher launcher;
     private final BriefingService briefingService = new BriefingService();
     private final JPanel rowsPanel;
+
+    private String   selectedProjectId;
+    private String   selectedRoleId;
+    private Runnable selectedLaunchAction = () -> {};
+    private Runnable selectedFocusAction  = () -> {};
+    private Runnable selectedBriefAction  = () -> {};
 
     public SessionPanel(ForemanWorkspaceService workspaceService, SessionRegistry registry,
                         TerminalLauncher launcher) {
@@ -35,6 +45,22 @@ public class SessionPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         registry.onChange(this::rebuild);
+
+        var im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        var am = getActionMap();
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), "row_launch");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0), "row_focus");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_B, 0), "row_brief");
+        am.put("row_launch", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedLaunchAction.run(); }
+        });
+        am.put("row_focus", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedFocusAction.run(); }
+        });
+        am.put("row_brief", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { selectedBriefAction.run(); }
+        });
+
         rebuild();
     }
 
@@ -53,6 +79,9 @@ public class SessionPanel extends JPanel {
     }
 
     private void rebuild() {
+        selectedLaunchAction = () -> {};
+        selectedFocusAction  = () -> {};
+        selectedBriefAction  = () -> {};
         rowsPanel.removeAll();
 
         var projects = workspaceService.getWorkspace().projects();
@@ -99,6 +128,10 @@ public class SessionPanel extends JPanel {
         panel.setBorder(new EmptyBorder(8, 12, 8, 12));
         panel.setOpaque(true);
 
+        var isSelected = row.projectId().equals(selectedProjectId)
+                && row.roleId().equals(selectedRoleId);
+        if (isSelected) panel.setBackground(UIManager.getColor("List.selectionBackground"));
+
         var projectLabel = new JLabel(row.projectName());
         var roleLabel    = new JLabel(row.roleLabel());
 
@@ -124,6 +157,7 @@ public class SessionPanel extends JPanel {
             var briefing = briefingService.generate(project, role);
             BriefingDialog.show(owner, role.name(), project.name(), briefing);
         });
+        if (isSelected) selectedBriefAction = briefButton::doClick;
 
         var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
@@ -164,6 +198,10 @@ public class SessionPanel extends JPanel {
                     registry.setRunning(row.projectId(), row.roleId(), true);
                 }
             });
+            if (isSelected) {
+                selectedLaunchAction = actionButton::doClick;
+                selectedFocusAction  = isRunning ? actionButton::doClick : () -> {};
+            }
 
             right.add(statusLabel);
             right.add(briefButton);
@@ -176,6 +214,10 @@ public class SessionPanel extends JPanel {
 
             var toggleButton = new JButton(isRunning ? "Set Idle" : "Set Active");
             toggleButton.addActionListener(e -> registry.toggle(row.projectId(), row.roleId()));
+            if (isSelected) {
+                selectedLaunchAction = toggleButton::doClick;
+                selectedFocusAction  = () -> {};
+            }
 
             right.add(statusLabel);
             right.add(briefButton);
@@ -184,6 +226,17 @@ public class SessionPanel extends JPanel {
 
         panel.add(left, BorderLayout.CENTER);
         panel.add(right, BorderLayout.EAST);
+
+        var selectListener = new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                selectedProjectId = row.projectId();
+                selectedRoleId    = row.roleId();
+                rebuild();
+            }
+        };
+        panel.addMouseListener(selectListener);
+        left.addMouseListener(selectListener);
+        for (var c : left.getComponents()) c.addMouseListener(selectListener);
 
         return panel;
     }

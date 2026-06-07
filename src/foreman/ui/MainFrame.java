@@ -11,6 +11,8 @@ import foreman.app.TerminalLauncher;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -78,11 +80,15 @@ public class MainFrame extends JFrame {
         var settingsBtn = ForemanUiHelper.iconButton("Settings", ForemanUiHelper.icon("settings"));
         settingsBtn.addActionListener(e -> SettingsDialog.show(this, settingsService));
 
+        var shortcutsBtn = ForemanUiHelper.iconButton("Shortcuts", ForemanUiHelper.icon("keyboard"));
+        shortcutsBtn.addActionListener(e -> ShortcutsDialog.show(this));
+
         var exitBtn = ForemanUiHelper.iconButton("Exit", ForemanUiHelper.icon("logout"));
         exitBtn.addActionListener(e -> System.exit(0));
 
         toolbar.add(registerBtn);
         toolbar.add(settingsBtn);
+        toolbar.add(shortcutsBtn);
         toolbar.add(Box.createHorizontalGlue());
         toolbar.add(exitBtn);
 
@@ -101,6 +107,32 @@ public class MainFrame extends JFrame {
             @Override
             public void windowGainedFocus(WindowEvent e) {
                 sessionPanel.reload();
+            }
+        });
+
+        var mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        var im   = getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        var am   = getRootPane().getActionMap();
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_R,     mask), "shortcut_register");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA, mask), "shortcut_settings");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q,     mask), "shortcut_quit");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, mask), "shortcut_keyboard");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_W,     mask), "shortcut_close");
+        am.put("shortcut_register", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { registerBtn.doClick(); }
+        });
+        am.put("shortcut_settings", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { settingsBtn.doClick(); }
+        });
+        am.put("shortcut_quit", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { exitBtn.doClick(); }
+        });
+        am.put("shortcut_keyboard", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { ShortcutsDialog.show(MainFrame.this); }
+        });
+        am.put("shortcut_close", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                dispatchEvent(new WindowEvent(MainFrame.this, WindowEvent.WINDOW_CLOSING));
             }
         });
     }
