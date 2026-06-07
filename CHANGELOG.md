@@ -7,6 +7,7 @@ All notable changes to Foreman are documented here.
 ### Added
 - Icon infrastructure: `ForemanUiHelper` with `iconButton()` / `iconOnlyButton()` / `icon()` / `applyDense()` factory methods; 8 Tabler Icons SVGs downloaded to `src/icons/` and bundled into the JAR
 - Dense mode: Settings dialog checkbox toggles icon-only buttons app-wide; setting persisted to `~/.foreman/settings.json`; `ForemanSettings` gains `Boolean dense` field (null-safe for old JSON)
+- Toolbar buttons (Register Project, Settings, Exit) and session panel buttons (Launch, Focus, Brief) now show SVG icons via `ForemanUiHelper.iconButton()`; text labels are hidden in dense mode, leaving only the icon
 
 ### Fixed
 - Sessions no longer show as Running after Foreman restart: TTY map is now in-memory only; macOS recycles /dev/ttysN devices so persisting them caused stale matches against unrelated terminals on restart

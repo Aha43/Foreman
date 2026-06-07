@@ -60,7 +60,7 @@ public class MainFrame extends JFrame {
         var toolbar = new JToolBar();
         toolbar.setFloatable(false);
 
-        var registerBtn = new JButton("Register Project");
+        var registerBtn = ForemanUiHelper.iconButton("Register Project", ForemanUiHelper.icon("folder-plus"));
         registerBtn.addActionListener(e -> {
             var initialDir = java.nio.file.Path.of(settingsService.get().defaultProjectDir());
             RegisterProjectDialog.show(this, initialDir).ifPresent(result -> {
@@ -75,10 +75,10 @@ public class MainFrame extends JFrame {
             });
         });
 
-        var settingsBtn = new JButton("Settings");
+        var settingsBtn = ForemanUiHelper.iconButton("Settings", ForemanUiHelper.icon("settings"));
         settingsBtn.addActionListener(e -> SettingsDialog.show(this, settingsService));
 
-        var exitBtn = new JButton("Exit");
+        var exitBtn = ForemanUiHelper.iconButton("Exit", ForemanUiHelper.icon("logout"));
         exitBtn.addActionListener(e -> System.exit(0));
 
         toolbar.add(registerBtn);

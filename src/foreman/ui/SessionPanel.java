@@ -107,7 +107,7 @@ public class SessionPanel extends JPanel {
             roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
         }
 
-        var briefButton = new JButton("Brief");
+        var briefButton = ForemanUiHelper.iconButton("Brief", ForemanUiHelper.icon("notes"));
         briefButton.addActionListener(e -> {
             var workspace = workspaceService.getWorkspace();
             var role = workspace.roles().stream()
@@ -140,7 +140,9 @@ public class SessionPanel extends JPanel {
                     ? UIManager.getColor("Component.accentColor")
                     : UIManager.getColor("Label.disabledForeground"));
 
-            var actionButton = new JButton(isRunning ? "Focus" : "Launch");
+            var actionButton = ForemanUiHelper.iconButton(
+                    isRunning ? "Focus" : "Launch",
+                    ForemanUiHelper.icon(isRunning ? "focus-2" : "terminal-2"));
             actionButton.addActionListener(e -> {
                 var label = sessionLabel(row.projectName(), row.roleLabel());
                 if (isRunning) {
