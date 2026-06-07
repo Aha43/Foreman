@@ -14,7 +14,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 
 public class SessionPanel extends JPanel {
 
@@ -85,18 +84,29 @@ public class SessionPanel extends JPanel {
         rowsPanel.removeAll();
 
         var projects = workspaceService.getWorkspace().projects();
-        var rows = collectRows(projects);
+        var hasAny = false;
+        for (var p : projects) if (!p.team().assignments().isEmpty()) { hasAny = true; break; }
 
-        if (rows.isEmpty()) {
+        if (!hasAny) {
             var empty = new JLabel("No sessions registered. Select a project and mark a role as active.");
             empty.setHorizontalAlignment(SwingConstants.CENTER);
             empty.setForeground(UIManager.getColor("Label.disabledForeground"));
             empty.setBorder(new EmptyBorder(24, 16, 24, 16));
             rowsPanel.add(empty);
         } else {
-            for (var row : rows) {
-                rowsPanel.add(buildRow(row));
+            String lastId = null;
+            for (var project : projects) {
+                if (project.team().assignments().isEmpty()) continue;
+                if (lastId != null) rowsPanel.add(Box.createVerticalStrut(8));
+                lastId = project.id();
+                rowsPanel.add(buildGroupHeader(project.name()));
                 rowsPanel.add(new JSeparator());
+                for (var assignment : project.team().assignments()) {
+                    var row = new RowData(project.id(), project.name(), project.path(),
+                            assignment.roleId(), assignment.label());
+                    rowsPanel.add(buildRow(row));
+                    rowsPanel.add(new JSeparator());
+                }
             }
         }
 
@@ -104,19 +114,21 @@ public class SessionPanel extends JPanel {
         rowsPanel.repaint();
     }
 
+    private JPanel buildGroupHeader(String projectName) {
+        var panel = new JPanel(new BorderLayout());
+        panel.setOpaque(true);
+        var bg = UIManager.getColor("Table.alternateRowBackground");
+        if (bg == null) bg = UIManager.getColor("Panel.background");
+        panel.setBackground(bg);
+        panel.setBorder(new EmptyBorder(6, 12, 6, 12));
+        var label = new JLabel(projectName);
+        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        panel.add(label, BorderLayout.WEST);
+        return panel;
+    }
+
     private record RowData(String projectId, String projectName, String projectPath,
                            String roleId, String roleLabel) {}
-
-    private java.util.List<RowData> collectRows(java.util.List<Project> projects) {
-        var rows = new ArrayList<RowData>();
-        for (var project : projects) {
-            for (var assignment : project.team().assignments()) {
-                rows.add(new RowData(project.id(), project.name(), project.path(),
-                        assignment.roleId(), assignment.label()));
-            }
-        }
-        return rows;
-    }
 
     private JPanel buildRow(RowData row) {
         var session = registry.getSessions().stream()
@@ -132,13 +144,8 @@ public class SessionPanel extends JPanel {
                 && row.roleId().equals(selectedRoleId);
         if (isSelected) panel.setBackground(UIManager.getColor("List.selectionBackground"));
 
-        var projectLabel = new JLabel(row.projectName());
-        var roleLabel    = new JLabel(row.roleLabel());
-
-        if (isRunning) {
-            projectLabel.setFont(projectLabel.getFont().deriveFont(Font.BOLD));
-            roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
-        }
+        var roleLabel = new JLabel(row.roleLabel());
+        if (isRunning) roleLabel.setFont(roleLabel.getFont().deriveFont(Font.BOLD));
 
         var briefButton = ForemanUiHelper.iconButton("Brief", ForemanUiHelper.icon("notes"));
         briefButton.addActionListener(e -> {
@@ -161,8 +168,6 @@ public class SessionPanel extends JPanel {
 
         var left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
-        left.add(projectLabel);
-        left.add(new JLabel("/"));
         left.add(roleLabel);
 
         var right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
