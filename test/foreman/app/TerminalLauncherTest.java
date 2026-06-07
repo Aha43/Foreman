@@ -59,6 +59,11 @@ class TerminalLauncherTest {
     }
 
     @Test
+    void noOpLaunchShellDoesNotThrow() {
+        assertDoesNotThrow(() -> new NoOpTerminalLauncher().launchShell("/path", "label"));
+    }
+
+    @Test
     void buildLaunchScriptContainsCdAndExec() {
         var script = MacOsTerminalLauncher.buildLaunchScript("/home/user/myproject");
         assertTrue(script.startsWith("#!/bin/bash\n"));

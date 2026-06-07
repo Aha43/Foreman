@@ -58,6 +58,23 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
     }
 
     @Override
+    public void launchShell(String projectPath, String label) {
+        var escapedPath = escapeShell(projectPath);
+        var script = """
+                tell application "Terminal"
+                  set w to do script "cd '%s'"
+                  set custom title of w to "%s"
+                  activate
+                  return tty of w
+                end tell
+                """.formatted(escapedPath, label);
+        var tty = runScriptCapturing(script).strip();
+        if (!tty.isBlank()) {
+            ttyMap.put(label, tty);
+        }
+    }
+
+    @Override
     public void focus(String label) {
         var tty = ttyMap.get(label);
         if (tty == null) return;
