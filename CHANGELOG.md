@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Project list shows a running session count badge next to each project name: `● N` in accent colour when N > 0, `○` in muted colour otherwise; badge updates live when sessions are launched or stopped
 - Icon infrastructure: `ForemanUiHelper` with `iconButton()` / `iconOnlyButton()` / `icon()` / `applyDense()` factory methods; 8 Tabler Icons SVGs downloaded to `src/icons/` and bundled into the JAR
 - Dense mode: Settings dialog checkbox toggles icon-only buttons app-wide; setting persisted to `~/.foreman/settings.json`; `ForemanSettings` gains `Boolean dense` field (null-safe for old JSON)
 - Toolbar buttons (Register Project, Settings, Exit) and session panel buttons (Launch, Focus, Brief) now show SVG icons via `ForemanUiHelper.iconButton()`; text labels are hidden in dense mode, leaving only the icon

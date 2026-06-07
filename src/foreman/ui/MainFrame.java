@@ -32,7 +32,7 @@ public class MainFrame extends JFrame {
         var sessionRegistry     = new SessionRegistry();
 
         var workspace    = service.getWorkspace();
-        var listPanel    = new ProjectListPanel(workspace.projects());
+        var listPanel    = new ProjectListPanel(workspace.projects(), sessionRegistry);
         var detailPanel  = new ProjectDetailPanel();
         var sessionPanel = new SessionPanel(service, sessionRegistry, launcher);
 
