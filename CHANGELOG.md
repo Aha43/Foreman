@@ -7,6 +7,7 @@ All notable changes to Foreman are documented here.
 ### Added
 - Settings dialog: toggling dense mode now applies immediately so the toolbar updates live behind the dialog; Cancel reverts to the original setting
 - Session panel: project group headers are now collapsible — click the header (or ▼/▶ chevron) to hide/show its role rows; all groups start expanded and state resets on restart
+- Help system: in-panel HTML help (Help tab + toolbar button + F1); topic sidebar with sections; article viewer with concept:// internal links and external browser links; pop-out floating dialog with persisted bounds; 12 articles covering Tutorial, Projects, Sessions, Briefings, and App topics
 - Role display labels strip a trailing " Chat" suffix on registration (e.g. "Dev Chat" → "Dev" in the session panel); the canonical role name is preserved for deduplication
 - About dialog (F1 or toolbar button) shows app name and version; supports ⌘W to close
 - Registration discovery feedback: after registering a project, the project list shows an inline message with the roles found (or a "no roles discovered" notice if docs/roles/ is absent); message clears on next project selection

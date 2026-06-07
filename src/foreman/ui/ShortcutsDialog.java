@@ -35,7 +35,7 @@ public class ShortcutsDialog extends JDialog {
         body.add(shortcutRow(sc("/"), "Keyboard Shortcuts"));
         body.add(shortcutRow(sc("W"), "Close dialog"));
         body.add(shortcutRow(sc("Q"), "Exit"));
-        body.add(shortcutRow("F1",    "About"));
+        body.add(shortcutRow("F1",    "Help"));
         body.add(Box.createVerticalStrut(8));
 
         var closeBtn = new JButton("Close");

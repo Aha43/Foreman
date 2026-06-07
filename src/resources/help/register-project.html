@@ -1,0 +1,23 @@
+<h1>Registering a Project</h1>
+
+<p>Click <strong>Register Project</strong> in the toolbar (or press <kbd>⌘R</kbd>) to add a project to Foreman.</p>
+
+<h2>What happens</h2>
+<ol>
+  <li>A dialog asks for the project directory. Use <strong>Browse…</strong> or type the path directly.</li>
+  <li>Foreman derives the project name from the directory name — you can edit it before confirming.</li>
+  <li>Foreman scans <code>docs/roles/*.md</code> under that directory and registers any roles it finds.</li>
+  <li>The project appears in the list and is selected immediately.</li>
+</ol>
+
+<h2>After registration</h2>
+<p>A message below the project list confirms how many roles were discovered. If no
+<code>docs/roles/</code> directory exists the project is registered with an empty team —
+you can add role files later and re-register.</p>
+
+<h2>External projects</h2>
+<p>For projects you don't own (client repos, open-source), consider a
+<a href="concept://sidecar-projects">sidecar workflow path</a> so you don't inject
+Foreman files into foreign codebases.</p>
+
+<p>See also: <a href="concept://role-discovery">Role discovery</a></p>

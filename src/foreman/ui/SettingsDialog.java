@@ -1,6 +1,5 @@
 package foreman.ui;
 
-import foreman.app.ForemanSettings;
 import foreman.app.ForemanSettingsService;
 
 import javax.swing.*;
@@ -36,7 +35,9 @@ public class SettingsDialog extends JDialog {
             dispose();
         });
         okButton.addActionListener(e -> {
-            settingsService.update(new ForemanSettings(dirField.getText().strip(), denseCheck.isSelected()));
+            settingsService.update(settingsService.get()
+                    .withDefaultProjectDir(dirField.getText().strip())
+                    .withDense(denseCheck.isSelected()));
             dispose();
         });
         getRootPane().setDefaultButton(okButton);

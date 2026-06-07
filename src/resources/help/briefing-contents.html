@@ -1,0 +1,36 @@
+<h1>What's in a Briefing</h1>
+
+<p>A briefing is the text Foreman copies to your clipboard on
+<a href="concept://launch">Launch</a>. Paste it into Claude Code immediately after
+startup to orient the session.</p>
+
+<h2>Structure</h2>
+<pre>
+You are [Role label] for [Project name].
+
+Your working directory: /path/to/project
+
+Before starting, read:
+  - /path/to/project/CLAUDE.md
+  - /path/to/project/docs/roles/dev.md      (your role)
+  - /path/to/project/docs/features/...      (design docs, if present)
+
+Your task:
+  - Closes #42 — Add dark mode toggle
+  - Closes #43 — Fix settings persistence
+
+Do not start until you have read the files listed above.
+</pre>
+
+<h2>Role doc</h2>
+<p>The path to the role's source <code>.md</code> file is included so Claude Code can read
+the full instructions. If the file can't be found by path Foreman falls back to
+embedding the instructions inline.</p>
+
+<h2>Design docs</h2>
+<p>Foreman scans <code>docs/features/</code> for <code>design.md</code> files and lists them.
+This helps Claude Code find feature-level context without being told explicitly.</p>
+
+<h2>GitHub issues</h2>
+<p>See <a href="concept://github-issues">GitHub issues integration</a> for how open issues
+appear in the task list.</p>

@@ -1,7 +1,6 @@
 package foreman.ui;
 
 import foreman.app.AppInfo;
-import foreman.app.ForemanSettings;
 import foreman.app.ForemanSettingsService;
 import foreman.app.ForemanWorkspaceService;
 import foreman.app.ProjectRegistrationService;
@@ -84,10 +83,15 @@ public class MainFrame extends JFrame {
                 }
                 var parent = result.path().getParent();
                 if (parent != null) {
-                    settingsService.update(new ForemanSettings(parent.toAbsolutePath().toString(), settingsService.get().isDense()));
+                    settingsService.update(settingsService.get()
+                            .withDefaultProjectDir(parent.toAbsolutePath().toString()));
                 }
             });
         });
+
+        var helpPanel = new HelpPanel(settingsService, true);
+
+        var helpBtn = ForemanUiHelper.iconButton("Help", ForemanUiHelper.icon("help-circle"));
 
         var settingsBtn = ForemanUiHelper.iconButton("Settings", ForemanUiHelper.icon("settings"));
         settingsBtn.addActionListener(e -> SettingsDialog.show(this, settingsService));
@@ -105,12 +109,15 @@ public class MainFrame extends JFrame {
         toolbar.add(settingsBtn);
         toolbar.add(shortcutsBtn);
         toolbar.add(Box.createHorizontalGlue());
+        toolbar.add(helpBtn);
         toolbar.add(aboutBtn);
         toolbar.add(exitBtn);
 
         var tabs = new JTabbedPane();
         tabs.addTab("Project", detailPanel);
         tabs.addTab("Sessions", sessionPanel);
+        tabs.addTab("Help", helpPanel);
+        helpBtn.addActionListener(e -> tabs.setSelectedComponent(helpPanel));
 
         var split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listPanel, tabs);
         split.setDividerLocation(240);
@@ -134,7 +141,7 @@ public class MainFrame extends JFrame {
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q,     mask), "shortcut_quit");
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, mask), "shortcut_keyboard");
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_W,     mask), "shortcut_close");
-        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F1,    0),    "shortcut_about");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_F1,    0),    "shortcut_help");
         am.put("shortcut_register", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { registerBtn.doClick(); }
         });
@@ -151,6 +158,9 @@ public class MainFrame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 dispatchEvent(new WindowEvent(MainFrame.this, WindowEvent.WINDOW_CLOSING));
             }
+        });
+        am.put("shortcut_help", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { helpBtn.doClick(); }
         });
         am.put("shortcut_about", new AbstractAction() {
             public void actionPerformed(ActionEvent e) { AboutDialog.show(MainFrame.this); }

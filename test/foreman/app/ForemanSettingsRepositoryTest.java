@@ -20,7 +20,7 @@ class ForemanSettingsRepositoryTest {
 
     @Test
     void roundTripPreservesAllFields(@TempDir Path dir) {
-        var original = new ForemanSettings("/custom/projects", true);
+        var original = new ForemanSettings("/custom/projects", true, null, null, null, null);
         var file = dir.resolve("settings.json");
         repo.save(original, file);
         var loaded = repo.load(file);
