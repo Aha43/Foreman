@@ -2,6 +2,7 @@ package foreman.ui;
 
 import foreman.app.BriefingService;
 import foreman.app.ForemanWorkspaceService;
+import foreman.app.ProjectRegistrationService;
 import foreman.domain.Project;
 import foreman.domain.RoleAssignment;
 
@@ -12,11 +13,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ProjectDetailPanel extends JPanel {
 
-    private final ForemanWorkspaceService workspaceService;
-    private final BriefingService         briefingService = new BriefingService();
+    private final ForemanWorkspaceService  workspaceService;
+    private final ProjectRegistrationService registrationService;
+    private final BriefingService          briefingService = new BriefingService();
+
+    private Consumer<Project> onRescan = p -> {};
 
     private final JLabel    nameValue         = new JLabel();
     private final JLabel    pathValue         = new JLabel();
@@ -33,9 +38,13 @@ public class ProjectDetailPanel extends JPanel {
     private Project              currentProject;
     private List<RoleAssignment> currentAssignments = List.of();
 
-    public ProjectDetailPanel(ForemanWorkspaceService workspaceService) {
+    public void setOnRescan(Consumer<Project> callback) { this.onRescan = callback; }
+
+    public ProjectDetailPanel(ForemanWorkspaceService workspaceService,
+                              ProjectRegistrationService registrationService) {
         super(new BorderLayout(0, 0));
-        this.workspaceService = workspaceService;
+        this.workspaceService    = workspaceService;
+        this.registrationService = registrationService;
         setBorder(new EmptyBorder(16, 16, 16, 16));
 
         workflowPathLabel.setVisible(false);
@@ -62,10 +71,22 @@ public class ProjectDetailPanel extends JPanel {
             if (!e.getValueIsAdjusting()) onRoleSelected();
         });
 
-        var teamLabel = new JLabel("Team:");
+        var teamLabel  = new JLabel("Team:");
+        var rescanBtn  = ForemanUiHelper.iconButton("Rescan", ForemanUiHelper.icon("refresh"));
+        rescanBtn.addActionListener(e -> {
+            if (currentProject == null) return;
+            var updated = registrationService.rescan(currentProject, workspaceService);
+            showProject(updated);
+            onRescan.accept(updated);
+        });
+        var teamHeader = new JPanel(new BorderLayout());
+        teamHeader.setOpaque(false);
+        teamHeader.add(teamLabel, BorderLayout.WEST);
+        teamHeader.add(rescanBtn, BorderLayout.EAST);
+
         var teamPanel = new JPanel(new BorderLayout(0, 4));
         teamPanel.setOpaque(false);
-        teamPanel.add(teamLabel, BorderLayout.NORTH);
+        teamPanel.add(teamHeader, BorderLayout.NORTH);
         teamPanel.add(new JScrollPane(assignmentsList), BorderLayout.CENTER);
 
         roleContentArea.setEditable(false);

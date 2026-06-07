@@ -32,7 +32,7 @@ public class MainFrame extends JFrame {
 
         var workspace    = service.getWorkspace();
         var listPanel    = new ProjectListPanel(workspace.projects(), sessionRegistry);
-        var detailPanel  = new ProjectDetailPanel();
+        var detailPanel  = new ProjectDetailPanel(service, registrationService);
         var sessionPanel = new SessionPanel(service, sessionRegistry, launcher);
 
         listPanel.onSelectionChanged(project -> {
@@ -51,6 +51,11 @@ public class MainFrame extends JFrame {
             sessionRegistry.dropProject(project.id());
             listPanel.removeProject(project);
             detailPanel.clearProject();
+            sessionPanel.reload();
+        });
+
+        detailPanel.setOnRescan(updated -> {
+            listPanel.updateProject(updated);
             sessionPanel.reload();
         });
 
