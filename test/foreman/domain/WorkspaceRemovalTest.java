@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class WorkspaceRemovalTest {
 
     private static Project project(String id, String name) {
-        return new Project(id, name, "/path", "", new Team(List.of()));
+        return new Project(id, name, "/path", "", new Team(List.of()), null);
     }
 
     @Test

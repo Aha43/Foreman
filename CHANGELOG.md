@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Sidecar workflow path: projects can now have an optional separate workflow directory for role docs and design docs, decoupling the AI team workflow from the target codebase; Register Project dialog gains an optional "Workflow path" field; briefing distinguishes working directory from workflow docs when they differ; project detail panel shows the workflow path when set
 - Settings dialog: toggling dense mode now applies immediately so the toolbar updates live behind the dialog; Cancel reverts to the original setting
 - Session panel: project group headers are now collapsible — click the header (or ▼/▶ chevron) to hide/show its role rows; all groups start expanded and state resets on restart
 - Help system: in-panel HTML help (Help tab + toolbar button + F1); topic sidebar with sections; article viewer with concept:// internal links and external browser links; pop-out floating dialog with persisted bounds; 12 articles covering Tutorial, Projects, Sessions, Briefings, and App topics

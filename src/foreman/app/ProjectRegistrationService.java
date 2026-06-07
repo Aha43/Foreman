@@ -14,12 +14,15 @@ public class ProjectRegistrationService {
         this.discovery = discovery;
     }
 
-    public Project register(Path projectPath, String name, ForemanWorkspaceService workspaceService) {
+    public Project register(Path projectPath, String name, String workflowPath,
+                           ForemanWorkspaceService workspaceService) {
         var workspace = workspaceService.getWorkspace();
         var roles     = new ArrayList<>(workspace.roles());
         var projects  = new ArrayList<>(workspace.projects());
 
-        var discovered   = discovery.discover(projectPath);
+        var discoveryRoot = (workflowPath != null && !workflowPath.isBlank())
+                ? Path.of(workflowPath) : projectPath;
+        var discovered   = discovery.discover(discoveryRoot);
         var assignments  = new ArrayList<RoleAssignment>();
 
         for (var candidate : discovered) {
@@ -33,12 +36,14 @@ public class ProjectRegistrationService {
             assignments.add(new RoleAssignment(role.id(), displayLabel(role.name())));
         }
 
+        var normalizedWorkflowPath = (workflowPath != null && !workflowPath.isBlank()) ? workflowPath : null;
         var project = new Project(
                 UUID.randomUUID().toString(),
                 name,
                 projectPath.toAbsolutePath().toString(),
                 "",
-                new Team(assignments)
+                new Team(assignments),
+                normalizedWorkflowPath
         );
         projects.add(project);
 
