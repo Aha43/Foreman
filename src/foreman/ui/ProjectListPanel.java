@@ -14,6 +14,7 @@ public class ProjectListPanel extends JPanel {
 
     private final DefaultListModel<Project> model = new DefaultListModel<>();
     private final JList<Project> list;
+    private final JLabel statusLabel = new JLabel();
     private Consumer<Project> removeListener;
 
     public ProjectListPanel(List<Project> projects, SessionRegistry sessionRegistry) {
@@ -77,6 +78,10 @@ public class ProjectListPanel extends JPanel {
 
         sessionRegistry.onChange(list::repaint);
 
+        statusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        statusLabel.setVisible(false);
+
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         if (!model.isEmpty()) {
             list.setSelectedIndex(0);
@@ -101,6 +106,7 @@ public class ProjectListPanel extends JPanel {
         });
 
         add(new JScrollPane(list), BorderLayout.CENTER);
+        add(statusLabel, BorderLayout.SOUTH);
     }
 
     public void onRemove(Consumer<Project> listener) {
@@ -120,9 +126,15 @@ public class ProjectListPanel extends JPanel {
         }
     }
 
+    public void showFeedback(String message) {
+        statusLabel.setText("<html>" + message + "</html>");
+        statusLabel.setVisible(true);
+    }
+
     public void onSelectionChanged(Consumer<Project> handler) {
         list.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
+                statusLabel.setVisible(false);
                 handler.accept(list.getSelectedValue());
             }
         });

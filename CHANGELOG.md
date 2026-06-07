@@ -5,6 +5,8 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- About dialog (F1 or toolbar button) shows app name and version; supports ⌘W to close
+- Registration discovery feedback: after registering a project, the project list shows an inline message with the roles found (or a "no roles discovered" notice if docs/roles/ is absent); message clears on next project selection
 - Project list shows a running session count badge next to each project name: `● N` in accent colour when N > 0, `○` in muted colour otherwise; badge updates live when sessions are launched or stopped
 - Icon infrastructure: `ForemanUiHelper` with `iconButton()` / `iconOnlyButton()` / `icon()` / `applyDense()` factory methods; 8 Tabler Icons SVGs downloaded to `src/icons/` and bundled into the JAR
 - Dense mode: Settings dialog checkbox toggles icon-only buttons app-wide; setting persisted to `~/.foreman/settings.json`; `ForemanSettings` gains `Boolean dense` field (null-safe for old JSON)
