@@ -79,7 +79,7 @@ public class BriefingService {
         return sb.toString();
     }
 
-    Optional<Path> findRoleDoc(Path projectRoot, Role role) {
+    public Optional<Path> findRoleDoc(Path projectRoot, Role role) {
         var rolesDir = projectRoot.resolve("docs/roles");
         if (!Files.isDirectory(rolesDir)) return Optional.empty();
         // use the stored source filename when available (set at discovery time)

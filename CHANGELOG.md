@@ -5,6 +5,9 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- New Project wizard: toolbar button (⌘N) opens a dialog to create a new project directory, initialise `docs/roles/` with a bundled `foreman.md` role template, and register the project in one step; "no roles" feedback after Register Project now directs the user to New Project instead
+- Role content viewer: selecting a role in the project detail panel shows its instruction content; reads from disk when the file can be located, falls back to workspace-stored instructions otherwise; "Role file not found — try Rescan" shown only when no content is available at all
+- Rescan roles: Rescan button in the project detail panel re-reads role files from the project's workflow path, adds any new roles to the library and new assignments to the team, leaves existing assignments in place, and refreshes the session panel
 - Sidecar workflow path: projects can now have an optional separate workflow directory for role docs and design docs, decoupling the AI team workflow from the target codebase; Register Project dialog gains an optional "Workflow path" field; briefing distinguishes working directory from workflow docs when they differ; project detail panel shows the workflow path when set
 - Settings dialog: toggling dense mode now applies immediately so the toolbar updates live behind the dialog; Cancel reverts to the original setting
 - Session panel: project group headers are now collapsible — click the header (or ▼/▶ chevron) to hide/show its role rows; all groups start expanded and state resets on restart

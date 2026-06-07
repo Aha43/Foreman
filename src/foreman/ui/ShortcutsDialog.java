@@ -30,6 +30,7 @@ public class ShortcutsDialog extends JDialog {
         body.add(Box.createVerticalStrut(14));
         body.add(sectionHeader("General"));
         body.add(Box.createVerticalStrut(6));
+        body.add(shortcutRow(sc("N"), "New Project"));
         body.add(shortcutRow(sc("R"), "Register Project"));
         body.add(shortcutRow(sc(","), "Settings"));
         body.add(shortcutRow(sc("/"), "Keyboard Shortcuts"));

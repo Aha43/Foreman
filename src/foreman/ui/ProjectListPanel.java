@@ -118,6 +118,15 @@ public class ProjectListPanel extends JPanel {
         list.setSelectedValue(project, true);
     }
 
+    public void updateProject(Project updated) {
+        for (int i = 0; i < model.size(); i++) {
+            if (model.get(i).id().equals(updated.id())) {
+                model.set(i, updated);
+                break;
+            }
+        }
+    }
+
     public void removeProject(Project project) {
         var nextIndex = list.getSelectedIndex();
         model.removeElement(project);
