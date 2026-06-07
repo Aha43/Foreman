@@ -22,40 +22,40 @@ class BriefingServiceTest {
 
     @Test
     void formatOpensWithYouAre() {
-        var result = service.format("Foreman", "Dev Chat", List.of(), List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev Chat", null, null, List.of(), List.of(), Optional.empty());
         assertTrue(result.startsWith("You are the Dev Chat for Foreman."));
     }
 
     @Test
     void formatAlwaysIncludesClaludeMd() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, List.of(), List.of(), Optional.empty());
         assertTrue(result.contains("- CLAUDE.md"));
     }
 
     @Test
     void formatIncludesRoleDocWithAnnotation() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(),
+        var result = service.format("Foreman", "Dev", null, null, List.of(), List.of(),
                 Optional.of(Path.of("docs/roles/dev.md")));
         assertTrue(result.contains("docs/roles/dev.md — role instructions"));
     }
 
     @Test
     void formatOmitsRoleDocLineWhenAbsent() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, List.of(), List.of(), Optional.empty());
         assertFalse(result.contains("role instructions"));
     }
 
     @Test
     void formatIncludesDesignDocs() {
         var docs = List.of(Path.of("docs/features/core-domain/design.md"));
-        var result = service.format("Foreman", "Dev", List.of(), docs, Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, List.of(), docs, Optional.empty());
         assertTrue(result.contains("docs/features/core-domain/design.md"));
     }
 
     @Test
     void formatSingleIssueSetsTask() {
         var issues = List.of(new BriefingService.IssueRef(11, "Bug: briefing identical"));
-        var result = service.format("Foreman", "Dev", issues, List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, issues, List.of(), Optional.empty());
         assertTrue(result.contains("Your task: implement issue #11 — Bug: briefing identical."));
         assertTrue(result.contains("gh issue view 11"));
     }
@@ -64,7 +64,7 @@ class BriefingServiceTest {
     void formatMultipleIssuesListsThem() {
         var issues = List.of(new BriefingService.IssueRef(4, "Project registration"),
                              new BriefingService.IssueRef(5, "Session panel"));
-        var result = service.format("Foreman", "Dev", issues, List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, issues, List.of(), Optional.empty());
         assertTrue(result.contains("#4"));
         assertTrue(result.contains("Project registration"));
         assertTrue(result.contains("#5"));
@@ -73,14 +73,41 @@ class BriefingServiceTest {
 
     @Test
     void formatNoIssuesShowsFallback() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, List.of(), List.of(), Optional.empty());
         assertTrue(result.contains("no open issues found"));
     }
 
     @Test
     void formatEndsWithDoNotStart() {
-        var result = service.format("Foreman", "Dev", List.of(), List.of(), Optional.empty());
+        var result = service.format("Foreman", "Dev", null, null, List.of(), List.of(), Optional.empty());
         assertTrue(result.contains("Do not start until you have read the files and issue(s) listed above."));
+    }
+
+    @Test
+    void formatShowsPathsWhenWorkflowDiffersFromProject() {
+        var result = service.format("Client", "Dev",
+                "/client/repo", "/sidecars/client",
+                List.of(), List.of(), Optional.empty());
+        assertTrue(result.contains("Your working directory: /client/repo"));
+        assertTrue(result.contains("Workflow docs:          /sidecars/client"));
+    }
+
+    @Test
+    void formatOmitsPathsWhenWorkflowMatchesProject() {
+        var result = service.format("Native", "Dev",
+                "/my/project", "/my/project",
+                List.of(), List.of(), Optional.empty());
+        assertFalse(result.contains("Your working directory:"));
+        assertFalse(result.contains("Workflow docs:"));
+    }
+
+    @Test
+    void formatOmitsPathsWhenPathsAreNull() {
+        var result = service.format("Native", "Dev",
+                null, null,
+                List.of(), List.of(), Optional.empty());
+        assertFalse(result.contains("Your working directory:"));
+        assertFalse(result.contains("Workflow docs:"));
     }
 
     // findRoleDoc — sourceFile takes priority

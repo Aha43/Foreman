@@ -184,7 +184,7 @@ public class SessionPanel extends JPanel {
                     .findFirst()
                     .orElseGet(() -> new Project(
                             row.projectId(), row.projectName(), row.projectPath(), "",
-                            new foreman.domain.Team(java.util.List.of())));
+                            new foreman.domain.Team(java.util.List.of()), null));
             var owner   = (Frame) SwingUtilities.getWindowAncestor(this);
             var briefing = briefingService.generate(project, role);
             BriefingDialog.show(owner, role.name(), project.name(), briefing);
@@ -222,7 +222,7 @@ public class SessionPanel extends JPanel {
                             .findFirst()
                             .orElseGet(() -> new Project(
                                     row.projectId(), row.projectName(), row.projectPath(), "",
-                                    new foreman.domain.Team(java.util.List.of())));
+                                    new foreman.domain.Team(java.util.List.of()), null));
                     var briefing = briefingService.generate(project, role);
                     launcher.launch(row.projectPath(), label, briefing);
                     registry.setRunning(row.projectId(), row.roleId(), true);

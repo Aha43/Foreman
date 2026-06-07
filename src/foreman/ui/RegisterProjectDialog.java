@@ -8,21 +8,27 @@ import java.util.Optional;
 
 public class RegisterProjectDialog extends JDialog {
 
-    public record Result(Path path, String name) {}
+    public record Result(Path path, String name, String workflowPath) {}
 
-    private final JTextField pathField = new JTextField(30);
-    private final JTextField nameField = new JTextField(30);
-    private final JButton    okButton  = new JButton("Register");
+    private final JTextField pathField         = new JTextField(30);
+    private final JTextField nameField         = new JTextField(30);
+    private final JTextField workflowPathField = new JTextField(30);
+    private final JButton    okButton          = new JButton("Register");
 
     private Result result;
 
     private RegisterProjectDialog(Frame owner, Path initialDir) {
         super(owner, "Register Project", true);
         pathField.setEditable(false);
+        workflowPathField.setEditable(false);
         okButton.setEnabled(false);
 
         var browseButton = new JButton("Browse…");
-        browseButton.addActionListener(e -> browse(owner, initialDir));
+        browseButton.addActionListener(e -> browseProject(owner, initialDir));
+
+        var browseWorkflowButton = new JButton("Browse…");
+        browseWorkflowButton.addActionListener(e -> browseWorkflow(owner));
+
         nameField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e)  { syncOk(); }
@@ -32,7 +38,11 @@ public class RegisterProjectDialog extends JDialog {
         var cancelButton = new JButton("Cancel");
         cancelButton.addActionListener(e -> dispose());
         okButton.addActionListener(e -> {
-            result = new Result(Path.of(pathField.getText()), nameField.getText().strip());
+            var wf = workflowPathField.getText().strip();
+            result = new Result(
+                    Path.of(pathField.getText()),
+                    nameField.getText().strip(),
+                    wf.isBlank() ? null : wf);
             dispose();
         });
 
@@ -55,6 +65,16 @@ public class RegisterProjectDialog extends JDialog {
         gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
         form.add(nameField, gbc);
 
+        gbc.gridx = 0; gbc.gridy = 2; gbc.fill = GridBagConstraints.NONE; gbc.weightx = 0;
+        var workflowLabel = new JLabel("Workflow path:");
+        workflowLabel.setToolTipText("Optional: separate directory for role docs (leave blank for native Foreman projects)");
+        form.add(workflowLabel, gbc);
+        var workflowRow = new JPanel(new BorderLayout(6, 0));
+        workflowRow.add(workflowPathField, BorderLayout.CENTER);
+        workflowRow.add(browseWorkflowButton, BorderLayout.EAST);
+        gbc.gridx = 1; gbc.weightx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
+        form.add(workflowRow, gbc);
+
         var buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
         buttons.add(cancelButton);
         buttons.add(okButton);
@@ -68,7 +88,7 @@ public class RegisterProjectDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    private void browse(Frame owner, Path initialDir) {
+    private void browseProject(Frame owner, Path initialDir) {
         var chooser = new JFileChooser(initialDir != null ? initialDir.toFile() : null);
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         chooser.setDialogTitle("Select project directory");
@@ -79,6 +99,17 @@ public class RegisterProjectDialog extends JDialog {
                 nameField.setText(dir.getName());
             }
             syncOk();
+        }
+    }
+
+    private void browseWorkflow(Frame owner) {
+        var initial = workflowPathField.getText().isBlank() ? null
+                : new java.io.File(workflowPathField.getText());
+        var chooser = new JFileChooser(initial);
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setDialogTitle("Select workflow path (sidecar directory)");
+        if (chooser.showOpenDialog(owner) == JFileChooser.APPROVE_OPTION) {
+            workflowPathField.setText(chooser.getSelectedFile().getAbsolutePath());
         }
     }
 

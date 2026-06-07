@@ -65,7 +65,7 @@ public class MainFrame extends JFrame {
         registerBtn.addActionListener(e -> {
             var initialDir = java.nio.file.Path.of(settingsService.get().defaultProjectDir());
             RegisterProjectDialog.show(this, initialDir).ifPresent(result -> {
-                var project = registrationService.register(result.path(), result.name(), service);
+                var project = registrationService.register(result.path(), result.name(), result.workflowPath(), service);
                 listPanel.addProject(project);
                 detailPanel.showProject(project);
                 sessionPanel.reload();

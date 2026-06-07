@@ -25,7 +25,7 @@ class WorkspacePersistenceTest {
         var role = new Role("role-1", "Dev", "You are the dev.", "dev.md");
         var assignment = new RoleAssignment("role-1", "Dev");
         var team = new Team(List.of(assignment));
-        var project = new Project("proj-1", "Foreman", "/home/user/foreman", "The app itself", team);
+        var project = new Project("proj-1", "Foreman", "/home/user/foreman", "The app itself", team, null);
         var workspace = new ForemanWorkspace(List.of(role), List.of(project));
 
         var file = dir.resolve("workspace.json");
@@ -49,6 +49,28 @@ class WorkspacePersistenceTest {
         assertEquals(1, loadedAssignments.size());
         assertEquals("role-1", loadedAssignments.get(0).roleId());
         assertEquals("Dev", loadedAssignments.get(0).label());
+    }
+
+    @Test
+    void workflowPathIsNullWhenAbsentInJson(@TempDir Path dir) throws Exception {
+        var file = dir.resolve("workspace.json");
+        java.nio.file.Files.writeString(file,
+                "{\"roles\":[],\"projects\":[{\"id\":\"p1\",\"name\":\"Old\",\"path\":\"/old\"," +
+                "\"description\":\"\",\"team\":{\"assignments\":[]}}]}");
+        var loaded = repo.load(file);
+        assertNull(loaded.projects().get(0).workflowPath());
+    }
+
+    @Test
+    void workflowPathRoundTrips(@TempDir Path dir) {
+        var role       = new Role("r1", "Dev", "", "dev.md");
+        var team       = new Team(List.of());
+        var project    = new Project("p1", "Sidecar", "/project", "", team, "/sidecar");
+        var workspace  = new ForemanWorkspace(List.of(role), List.of(project));
+        var file       = dir.resolve("workspace.json");
+        repo.save(workspace, file);
+        var loaded = repo.load(file);
+        assertEquals("/sidecar", loaded.projects().get(0).workflowPath());
     }
 
     @Test

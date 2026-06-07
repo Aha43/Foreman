@@ -29,16 +29,26 @@ public class BriefingService {
     }
 
     public String generate(Project project, Role role) {
-        var issues     = fetchIssues(Path.of(project.path()));
-        var designDocs = findDesignDocs(Path.of(project.path()));
-        var roleDoc    = findRoleDoc(Path.of(project.path()), role);
-        return format(project.name(), role.name(), issues, designDocs, roleDoc);
+        var projectPath  = Path.of(project.path());
+        var workflowPath = Path.of(project.effectiveWorkflowPath());
+        var issues     = fetchIssues(projectPath);
+        var designDocs = findDesignDocs(workflowPath);
+        var roleDoc    = findRoleDoc(workflowPath, role);
+        return format(project.name(), role.name(), project.path(), project.effectiveWorkflowPath(),
+                      issues, designDocs, roleDoc);
     }
 
     String format(String projectName, String roleName,
+                  String projectPath, String workflowPath,
                   List<IssueRef> issues, List<Path> designDocs, Optional<Path> roleDoc) {
         var sb = new StringBuilder();
         sb.append("You are the ").append(roleName).append(" for ").append(projectName).append(".\n");
+
+        var isSidecar = projectPath != null && workflowPath != null && !workflowPath.equals(projectPath);
+        if (isSidecar) {
+            sb.append("\nYour working directory: ").append(projectPath).append("\n");
+            sb.append("Workflow docs:          ").append(workflowPath).append("\n");
+        }
 
         sb.append("\nBefore starting, read:\n");
         sb.append("  - CLAUDE.md\n");
