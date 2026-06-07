@@ -14,6 +14,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SessionPanel extends JPanel {
 
@@ -22,6 +24,8 @@ public class SessionPanel extends JPanel {
     private final TerminalLauncher launcher;
     private final BriefingService briefingService = new BriefingService();
     private final JPanel rowsPanel;
+
+    private final Set<String> collapsedProjectIds = new HashSet<>();
 
     private String   selectedProjectId;
     private String   selectedRoleId;
@@ -99,13 +103,15 @@ public class SessionPanel extends JPanel {
                 if (project.team().assignments().isEmpty()) continue;
                 if (lastId != null) rowsPanel.add(Box.createVerticalStrut(8));
                 lastId = project.id();
-                rowsPanel.add(buildGroupHeader(project.name()));
+                rowsPanel.add(buildGroupHeader(project.id(), project.name()));
                 rowsPanel.add(new JSeparator());
-                for (var assignment : project.team().assignments()) {
-                    var row = new RowData(project.id(), project.name(), project.path(),
-                            assignment.roleId(), assignment.label());
-                    rowsPanel.add(buildRow(row));
-                    rowsPanel.add(new JSeparator());
+                if (!collapsedProjectIds.contains(project.id())) {
+                    for (var assignment : project.team().assignments()) {
+                        var row = new RowData(project.id(), project.name(), project.path(),
+                                assignment.roleId(), assignment.label());
+                        rowsPanel.add(buildRow(row));
+                        rowsPanel.add(new JSeparator());
+                    }
                 }
             }
         }
@@ -114,16 +120,35 @@ public class SessionPanel extends JPanel {
         rowsPanel.repaint();
     }
 
-    private JPanel buildGroupHeader(String projectName) {
+    private JPanel buildGroupHeader(String projectId, String projectName) {
         var panel = new JPanel(new BorderLayout());
         panel.setOpaque(true);
         var bg = UIManager.getColor("Table.alternateRowBackground");
         if (bg == null) bg = UIManager.getColor("Panel.background");
         panel.setBackground(bg);
         panel.setBorder(new EmptyBorder(6, 12, 6, 12));
+
         var label = new JLabel(projectName);
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         panel.add(label, BorderLayout.WEST);
+
+        var collapsed = collapsedProjectIds.contains(projectId);
+        var chevron = new JLabel(collapsed ? "▶" : "▼");
+        chevron.setForeground(UIManager.getColor("Label.disabledForeground"));
+        panel.add(chevron, BorderLayout.EAST);
+
+        var toggleCollapse = new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                if (collapsedProjectIds.contains(projectId)) collapsedProjectIds.remove(projectId);
+                else collapsedProjectIds.add(projectId);
+                rebuild();
+            }
+        };
+        panel.addMouseListener(toggleCollapse);
+        label.addMouseListener(toggleCollapse);
+        chevron.addMouseListener(toggleCollapse);
+
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return panel;
     }
 
