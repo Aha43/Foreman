@@ -18,7 +18,12 @@ class TerminalLauncherTest {
 
     @Test
     void noOpLaunchDoesNotThrow() {
-        assertDoesNotThrow(() -> new NoOpTerminalLauncher().launch("/path", "label", "briefing"));
+        assertDoesNotThrow(() -> new NoOpTerminalLauncher().launch("/path", "label", "briefing", 1));
+    }
+
+    @Test
+    void noOpLaunchWithHighIndexDoesNotThrow() {
+        assertDoesNotThrow(() -> new NoOpTerminalLauncher().launch("/path", "label", "briefing", 3));
     }
 
     @Test

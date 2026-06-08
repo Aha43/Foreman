@@ -227,7 +227,7 @@ public class SessionPanel extends JPanel {
                                     row.projectId(), row.projectName(), row.projectPath(), "",
                                     new foreman.domain.Team(java.util.List.of()), null));
                     var briefing = briefingService.generate(project, role);
-                    launcher.launch(row.projectPath(), label, briefing);
+                    launcher.launch(row.projectPath(), label, briefing, 1);
                     registry.setRunning(row.projectId(), row.roleId(), true);
                 }
             });

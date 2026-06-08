@@ -36,7 +36,8 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
     }
 
     @Override
-    public void launch(String projectPath, String label, String briefing) {
+    public void launch(String projectPath, String label, String briefing, int index) {
+        var fullLabel = index > 1 ? label + " #" + index : label;
         copyToClipboard(briefing);
         writeBriefing(briefing);
         writeLaunchScript(projectPath);
@@ -50,10 +51,10 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
                   activate
                   return tty of w
                 end tell
-                """.formatted(escapedScript, label);
+                """.formatted(escapedScript, fullLabel);
         var tty = runScriptCapturing(script).strip();
         if (!tty.isBlank()) {
-            ttyMap.put(label, tty);
+            ttyMap.put(fullLabel, tty);
         }
     }
 
