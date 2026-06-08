@@ -6,4 +6,5 @@ public interface TerminalLauncher {
     void focus(String label);
     boolean exists(String label);
     boolean isSupported();
+    default String getTty(String label) { return null; }
 }

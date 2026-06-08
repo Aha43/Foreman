@@ -82,11 +82,16 @@ public class SessionPanel extends JPanel {
             for (var assignment : project.team().assignments()) {
                 for (var s : registry.getSessionsForRole(project.id(), assignment.roleId())) {
                     var label = fullSessionLabel(project.name(), assignment.label(), s.index());
-                    if (!launcher.exists(label)) registry.stopSession(s.id());
+                    // Only stop if the TTY is known and confirmed gone. If getTty returns null
+                    // the launch never stored a TTY (osascript failure) — leave the session in
+                    // place so a running terminal isn't incorrectly cleared.
+                    if (launcher.getTty(label) != null && !launcher.exists(label))
+                        registry.stopSession(s.id());
                 }
             }
             for (var s : registry.getSessionsForRole(project.id(), HUMAN_ROLE_ID)) {
-                if (!launcher.exists(sessionLabel(project.name(), "Human")))
+                var label = sessionLabel(project.name(), "Human");
+                if (launcher.getTty(label) != null && !launcher.exists(label))
                     registry.stopSession(s.id());
             }
         }
@@ -279,6 +284,8 @@ public class SessionPanel extends JPanel {
             right.add(briefButton);
             right.add(focusButton);
             right.add(anotherButton);
+
+            applyRunningRowExtras(panel, left, statusLabel, session, fullLabel);
         } else {
             var statusLabel = new JLabel("● Active");
             statusLabel.setForeground(UIManager.getColor("Component.accentColor"));
@@ -386,6 +393,8 @@ public class SessionPanel extends JPanel {
 
             subRow.add(subLeft, BorderLayout.CENTER);
             subRow.add(subRight, BorderLayout.EAST);
+
+            applyRunningRowExtras(subRow, subLeft, statusLabel, session, fullLabel);
 
             final var sessionId = session.id();
             var selectListener = new MouseAdapter() {
@@ -545,6 +554,33 @@ public class SessionPanel extends JPanel {
         panel.addMouseListener(selectListener);
         left.addMouseListener(selectListener);
         for (var c : left.getComponents()) c.addMouseListener(selectListener);
+    }
+
+    private void applyRunningRowExtras(JPanel panel, JPanel left, JLabel statusLabel,
+                                        Session session, String fullLabel) {
+        var tty = launcher.getTty(fullLabel);
+        if (tty != null) {
+            var tip = "TTY: " + tty;
+            panel.setToolTipText(tip);
+            left.setToolTipText(tip);
+            statusLabel.setToolTipText(tip);
+        }
+
+        var popup = new JPopupMenu();
+        var markStopped = new JMenuItem("Mark as stopped");
+        markStopped.addActionListener(e -> registry.stopSession(session.id()));
+        popup.add(markStopped);
+
+        var popupListener = new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent e)  { maybeShow(e); }
+            @Override public void mouseReleased(MouseEvent e) { maybeShow(e); }
+            private void maybeShow(MouseEvent e) {
+                if (e.isPopupTrigger()) popup.show(e.getComponent(), e.getX(), e.getY());
+            }
+        };
+        panel.addMouseListener(popupListener);
+        left.addMouseListener(popupListener);
+        statusLabel.addMouseListener(popupListener);
     }
 
     static String fullSessionLabel(String projectName, String roleLabel, int index) {

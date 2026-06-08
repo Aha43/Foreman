@@ -27,6 +27,16 @@ class TerminalLauncherTest {
     }
 
     @Test
+    void noOpGetTtyReturnsNull() {
+        assertNull(new NoOpTerminalLauncher().getTty("any label"));
+    }
+
+    @Test
+    void macOsGetTtyReturnsNullWhenNoTtyKnown() {
+        assertNull(new MacOsTerminalLauncher().getTty("Foreman · Unknown / Role"));
+    }
+
+    @Test
     void noOpFocusDoesNotThrow() {
         assertDoesNotThrow(() -> new NoOpTerminalLauncher().focus("label"));
     }

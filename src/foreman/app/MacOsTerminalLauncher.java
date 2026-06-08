@@ -97,6 +97,11 @@ public class MacOsTerminalLauncher implements TerminalLauncher {
     }
 
     @Override
+    public String getTty(String label) {
+        return ttyMap.get(label);
+    }
+
+    @Override
     public boolean exists(String label) {
         var tty = ttyMap.get(label);
         if (tty == null) return false;
