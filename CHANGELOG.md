@@ -5,6 +5,7 @@ All notable changes to Foreman are documented here.
 ## [Unreleased]
 
 ### Added
+- Session panel: adaptive multi-session row rendering — 0 sessions shows Launch; 1 session shows Focus + `[+ Another]`; 2+ sessions collapses into a group header `Role (N)` with indented sub-rows each showing Focus, and `[+ Another]` on the last sub-row; transitions are live on TTY-poll-on-focus-regain; Human rows are exempt from `[+ Another]`
 - Multi-session support in `SessionRegistry`: registry now stores `List<Session>` per `(projectId, roleId)` key; new `launchSession()` returns a `Session` with a 1-based index, `stopSession(sessionId)` removes by ID without renumbering, `getSessionsForRole()` exposes the per-role list; `TerminalLauncher.launch()` gains an `index` parameter and appends ` #N` to the terminal title when N > 1
 - Implicit Human session row: every project group in the session panel gains a permanent "Human" row at the bottom (person icon, no Brief button) that opens a plain shell in the project directory via `launchShell()`; Human terminals are TTY-tracked and reachable via Launch/Focus like AI role sessions
 - New Project wizard: toolbar button (⌘N) opens a dialog to create a new project directory, initialise `docs/roles/` with a bundled `foreman.md` role template, and register the project in one step; "no roles" feedback after Register Project now directs the user to New Project instead
