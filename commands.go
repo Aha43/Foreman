@@ -168,7 +168,35 @@ func windowStatus(w window) string {
 	if shells[w.Command] {
 		return "shell"
 	}
+	// Apps that announce themselves via the pane title (Claude Code sets
+	// "✳ Claude Code") beat the process name, which can be meaningless —
+	// Claude Code's native binary is named after its version ("2.1.200").
+	if t := paneTitle(w); t != "" {
+		return t
+	}
 	return w.Command
+}
+
+// paneTitle returns the pane title if an application actually set it;
+// untouched panes carry the hostname as tmux's default.
+func paneTitle(w window) string {
+	t := strings.TrimSpace(w.Title)
+	if t == "" || t == hostname() {
+		return ""
+	}
+	if r := []rune(t); len(r) > 24 {
+		t = string(r[:23]) + "…"
+	}
+	return t
+}
+
+var cachedHostname string
+
+func hostname() string {
+	if cachedHostname == "" {
+		cachedHostname, _ = os.Hostname()
+	}
+	return cachedHostname
 }
 
 func humanAge(unixStr string) string {

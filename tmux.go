@@ -53,11 +53,12 @@ type window struct {
 	Role     string // foreman's @fm_role option
 	Name     string // display name
 	Command  string // pane_current_command
+	Title    string // pane_title, set by apps that announce themselves (e.g. Claude Code)
 	Activity string // unix timestamp of last activity
 	Dead     bool
 }
 
-const windowFormat = "#{window_id}\t#{@fm_role}\t#{window_name}\t#{pane_current_command}\t#{window_activity}\t#{pane_dead}"
+const windowFormat = "#{window_id}\t#{@fm_role}\t#{window_name}\t#{pane_current_command}\t#{pane_title}\t#{window_activity}\t#{pane_dead}"
 
 func listWindows(project string) ([]window, error) {
 	out, err := tmux("list-windows", "-t", "="+sessionName(project), "-F", windowFormat)
@@ -67,10 +68,10 @@ func listWindows(project string) ([]window, error) {
 	var ws []window
 	for _, line := range strings.Split(out, "\n") {
 		f := strings.Split(line, "\t")
-		if len(f) < 6 {
+		if len(f) < 7 {
 			continue
 		}
-		ws = append(ws, window{ID: f[0], Role: f[1], Name: f[2], Command: f[3], Activity: f[4], Dead: f[5] == "1"})
+		ws = append(ws, window{ID: f[0], Role: f[1], Name: f[2], Command: f[3], Title: f[4], Activity: f[5], Dead: f[6] == "1"})
 	}
 	return ws, nil
 }
