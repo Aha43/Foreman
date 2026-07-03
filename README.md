@@ -55,6 +55,7 @@ Requires `tmux` (`brew install tmux`).
 ```
 go build -o foreman .
 mv foreman ~/.local/bin/        # or anywhere on PATH
+ln -s ~/.local/bin/foreman ~/.local/bin/fm   # optional short name
 ```
 
 ## Config
