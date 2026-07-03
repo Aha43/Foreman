@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,6 +83,43 @@ func loadConfig() Config {
 		}
 	}
 	return cfg
+}
+
+const configTemplate = `# foreman config — role presets and project settings.
+#
+# A role names what a terminal is for. "new <role>" starts cmd inside the
+# shell (window survives the process exiting); unknown roles get a plain shell.
+
+[role.planner]
+cmd = "claude --permission-mode plan"
+
+[role.agent]
+cmd = "claude"
+
+# [role.server]
+# cmd = "npm run dev"
+# dir = "~/code/project-a"        # role-specific directory, overrides project root
+
+# Where "new" starts terminals for a project (else: your current directory).
+# [project.A]
+# root = "~/code/project-a"
+`
+
+// cmdInit writes a starter config for the user to edit. Later this can grow
+// into an interactive Q&A; for now it scaffolds and points.
+func cmdInit() error {
+	path := configPath()
+	if _, err := os.Stat(path); err == nil {
+		return fmt.Errorf("config already exists: %s", path)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, []byte(configTemplate), 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s\nEdit it to define your roles and project roots.\n", path)
+	return nil
 }
 
 func expandHome(p string) string {

@@ -9,6 +9,7 @@ and closed by accident. foreman gives them an organizing principle — every
 terminal is a named *participant* in a *project*.
 
 ```
+foreman init                     write a starter config to edit
 foreman list                     all projects and their terminals
 foreman <project> new <role>     new terminal in the project (runs role preset, if any)
 foreman <project> go <role>      jump to that terminal (from anywhere)
@@ -55,7 +56,8 @@ mv foreman ~/.local/bin/        # or anywhere on PATH
 
 ## Config
 
-`~/.config/foreman/config.toml` (optional; override path with `$FOREMAN_CONFIG`):
+`foreman init` writes a starter `~/.config/foreman/config.toml` (optional;
+override path with `$FOREMAN_CONFIG`):
 
 ```toml
 [role.planner]

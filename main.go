@@ -8,6 +8,7 @@ import (
 const usage = `foreman — organize terminals by project, on top of tmux
 
 usage:
+  foreman init                     write a starter config to edit
   foreman list                     all projects and their terminals
   foreman <project> new <role>     new terminal in the project (runs role preset, if any)
   foreman <project> go <role>      jump to that terminal (from anywhere)
@@ -32,6 +33,10 @@ func main() {
 	}
 	if args[0] == "list" {
 		fail(cmdListAll())
+		return
+	}
+	if args[0] == "init" {
+		fail(cmdInit())
 		return
 	}
 
