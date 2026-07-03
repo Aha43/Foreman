@@ -11,7 +11,7 @@ usage:
   foreman init                     write a starter config to edit
   foreman list                     all projects and their terminals
   foreman <project> new <role>     new terminal in the project (runs role preset, if any)
-  foreman <project> go <role>      jump to that terminal (from anywhere)
+  foreman <project> go <role>      move that terminal's view here (--mirror to view alongside)
   foreman <project> list           terminals in the project
   foreman <project> adopt <role>   pull the current terminal into the project
   foreman <project> done [role]    close one terminal, or the whole project
@@ -57,7 +57,7 @@ func main() {
 		fail(cmdNew(project, arg))
 	case "go":
 		requireArg(verb, arg)
-		fail(cmdGo(project, arg))
+		fail(cmdGo(project, arg, len(args) > 3 && args[3] == "--mirror"))
 	case "list":
 		fail(cmdList(project))
 	case "adopt":

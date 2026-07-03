@@ -12,7 +12,7 @@ terminal is a named *participant* in a *project*.
 foreman init                     write a starter config to edit
 foreman list                     all projects and their terminals
 foreman <project> new <role>     new terminal in the project (runs role preset, if any)
-foreman <project> go <role>      jump to that terminal (from anywhere)
+foreman <project> go <role>      move that terminal's view here (--mirror to view alongside)
 foreman <project> list           terminals in the project
 foreman <project> adopt <role>   pull the terminal you're in into the project
 foreman <project> done [role]    close one terminal, or the whole project
@@ -39,6 +39,9 @@ $ foreman list
 - **Identity is loud**: every managed session gets a colored status-bar badge with
   the project name (color is stable per project), so you always know what you're
   typing into.
+- **One place at a time**: `go` moves the project's view to the terminal you ran
+  it in, detaching other viewers — navigating never multiplies terminals.
+  `go <role> --mirror` keeps the other views for the rare side-by-side case.
 - **Accidental close is harmless**: closing a terminal window only detaches a
   client; the session lives on in the tmux server. The only real teardown is the
   explicit `done` verb (whole-project `done` asks for confirmation).

@@ -51,19 +51,48 @@ func cmdNew(project, role string) error {
 	return nil
 }
 
-func cmdGo(project, role string) error {
+// cmdGo moves the project's view to the invoking terminal. Any other client
+// showing the session is detached — one project shows in one place, so going
+// somewhere never multiplies terminals (pass mirror to view alongside).
+func cmdGo(project, role string, mirror bool) error {
 	w, err := findWindow(project, role)
 	if err != nil {
 		return err
 	}
 	if insideTmux() {
-		_, err = tmux("switch-client", "-t", w.ID)
-		return err
+		if _, err := tmux("switch-client", "-t", w.ID); err != nil {
+			return err
+		}
+		if !mirror {
+			detachOtherClients(project)
+		}
+		return nil
 	}
 	if _, err := tmux("select-window", "-t", w.ID); err != nil {
 		return err
 	}
-	return tmuxExec("attach-session", "-t", "="+sessionName(project))
+	if mirror {
+		return tmuxExec("attach-session", "-t", "="+sessionName(project))
+	}
+	return tmuxExec("attach-session", "-d", "-t", "="+sessionName(project))
+}
+
+// detachOtherClients drops every client viewing the project except the one
+// this command runs in.
+func detachOtherClients(project string) {
+	self, err := tmux("display-message", "-p", "#{client_name}")
+	if err != nil {
+		return
+	}
+	out, err := tmux("list-clients", "-t", sessionName(project), "-F", "#{client_name}")
+	if err != nil || out == "" {
+		return
+	}
+	for _, c := range strings.Split(out, "\n") {
+		if c != "" && c != self {
+			tmux("detach-client", "-t", c)
+		}
+	}
 }
 
 func cmdAdopt(project, role string) error {
