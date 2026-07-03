@@ -241,6 +241,7 @@ type projectInfo struct {
 	Name     string
 	Pinned   bool
 	Attached bool
+	Clients  int
 	Windows  []window
 }
 
@@ -258,7 +259,8 @@ func cmdListAll() error {
 		}
 		name := strings.TrimPrefix(f[0], sessionPrefix)
 		ws, _ := listWindows(name)
-		projects = append(projects, projectInfo{Name: name, Pinned: f[1] == "1", Attached: f[2] != "0", Windows: ws})
+		clients, _ := strconv.Atoi(f[2])
+		projects = append(projects, projectInfo{Name: name, Pinned: f[1] == "1", Attached: clients > 0, Clients: clients, Windows: ws})
 	}
 	if len(projects) == 0 {
 		fmt.Println("no projects")
@@ -276,6 +278,9 @@ func cmdListAll() error {
 		attached := ""
 		if p.Attached {
 			attached = " (attached)"
+			if p.Clients > 1 {
+				attached = fmt.Sprintf(" (attached ×%d)", p.Clients)
+			}
 		}
 		var parts []string
 		for _, w := range p.Windows {
