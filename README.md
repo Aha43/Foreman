@@ -106,3 +106,7 @@ milestones — see [docs/workflow.md](docs/workflow.md). The broad strokes:
 - `go --window`: open the terminal in a new macOS window instead of switching in place.
 - tmux control mode (`tmux -CC`) event stream instead of polling, once the
   heuristics settle.
+
+## License
+
+[MIT](LICENSE)
