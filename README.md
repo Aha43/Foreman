@@ -25,6 +25,10 @@ managed terminal, that terminal's project; otherwise the configured project
 (Verb names — `new`, `go`, `list`, … — are therefore reserved as project
 names. Bare `foreman list` always shows all projects.)
 
+After creating a terminal, `new` offers to jump to it (`go to coder? [Y/n]`,
+plain Enter goes). The prompt only appears on a TTY — scripted use creates
+without going.
+
 Example session:
 
 ```
