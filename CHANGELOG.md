@@ -15,6 +15,12 @@ minor = features (breaking changes allowed), patch = fixes.
   is. tmux itself re-runs the check on its redraw schedule (~15s): no daemon, no stored state.
   Applies to sessions created/adopted from now on. Closes #4.
 
+- **macOS notifications when an agent starts waiting.** The explorer's 10-second poll now
+  remembers each participant's last state (as a tmux window option — the memory lives in the
+  server too) and posts a notification on the transition into `waiting` — for **pinned**
+  projects only; everything else stays glanceable in the menu, which now also carries the
+  ⚠/○ state marks. Closes #5.
+
 ### Fixed
 
 - **Explorer: clicking a participant is injection-safe.** The `fm … go …` command reaches

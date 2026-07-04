@@ -103,6 +103,17 @@ func TestStateOfCaptureFallback(t *testing.T) {
 	}
 }
 
+func TestLastStateRoundTrip(t *testing.T) {
+	fakeTmux(t, map[string]string{"show-options": "waiting"})
+	if got := LastState(Window{ID: "@1"}); got != StateWaiting {
+		t.Errorf("got %q, want waiting", got)
+	}
+	fakeTmux(t, nil) // option unset / no server
+	if got := LastState(Window{ID: "@1"}); got != "" {
+		t.Errorf("got %q, want empty for unset", got)
+	}
+}
+
 func TestTickerLine(t *testing.T) {
 	setHostname(t, "testhost")
 	cfg := cfgWithRoleCmds(map[string]string{"coder": "claude"})

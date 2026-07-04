@@ -53,6 +53,22 @@ func stateOf(cfg Config, w Window, peek bool) State {
 	return StateWorking
 }
 
+// LastState reads the participant's previously recorded state — the watcher's
+// memory, stored as a tmux window option so even it lives in the server
+// (issue #5). Empty means never recorded.
+func LastState(w Window) State {
+	out, err := Tmux("show-options", "-w", "-q", "-v", "-t", w.ID, "@fm_last_state")
+	if err != nil {
+		return ""
+	}
+	return State(out)
+}
+
+// RecordState writes the watcher's memory back into the window.
+func RecordState(w Window, s State) {
+	Tmux("set-option", "-w", "-t", w.ID, "@fm_last_state", string(s))
+}
+
 // TickerLine renders the cross-project attention summary shown in a managed
 // session's status bar: participants waiting in *other* projects, nothing
 // else — empty when nobody needs you (issue #4). Projects arrive pinned-first
