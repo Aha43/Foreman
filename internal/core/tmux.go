@@ -44,6 +44,12 @@ func InsideTmux() bool {
 	return os.Getenv("TMUX") != ""
 }
 
+// ShellQuote makes s safe as a single sh word: wrapped in single quotes,
+// with embedded single quotes escaped as '\”.
+func ShellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
 const SessionPrefix = "fm-"
 
 func SessionName(project string) string {
@@ -163,4 +169,14 @@ func StyleSession(project string) {
 	Tmux("set-option", "-t", s, "window-status-current-format",
 		fmt.Sprintf("#[fg=colour232,bg=%s] #I:#W #[default]", color))
 	Tmux("set-option", "-t", s, "window-status-format", " #I:#W ")
+	// The cross-project ticker (issue #4): tmux re-runs the #() command on
+	// its redraw schedule — tmux is the scheduler, no watcher process.
+	// Absolute binary path, because tmux runs #() with a minimal PATH.
+	if exe, err := os.Executable(); err == nil {
+		Tmux("set-option", "-t", s, "status-interval", "15")
+		Tmux("set-option", "-t", s, "status-right-length", "60")
+		Tmux("set-option", "-t", s, "status-right",
+			fmt.Sprintf("#[fg=colour214]#(%s __ticker %s)#[default]",
+				ShellQuote(exe), ShellQuote(project)))
+	}
 }

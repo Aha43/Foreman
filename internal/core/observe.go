@@ -19,6 +19,13 @@ const (
 // current command being a shell means the role's process ended (done) or the
 // terminal never ran one (shell).
 func StateOf(cfg Config, w Window) State {
+	return stateOf(cfg, w, true)
+}
+
+// stateOf with peek=false skips the capture-pane fallback — for callers on a
+// tight schedule like the status-bar ticker, where a per-window subprocess
+// every redraw isn't worth the marginal accuracy.
+func stateOf(cfg Config, w Window, peek bool) State {
 	if w.Dead {
 		return StateExited
 	}
@@ -36,12 +43,37 @@ func StateOf(cfg Config, w Window) State {
 	// Title uninformative: peek at the pane's bottom lines. Content matching
 	// self-pollutes easily (output *mentioning* a prompt looks like one), so
 	// the pattern set stays small and the default is working.
-	if out, err := Tmux("capture-pane", "-p", "-t", w.ID); err == nil {
-		if classifyOutput(out) == StateWaiting {
-			return StateWaiting
+	if peek {
+		if out, err := Tmux("capture-pane", "-p", "-t", w.ID); err == nil {
+			if classifyOutput(out) == StateWaiting {
+				return StateWaiting
+			}
 		}
 	}
 	return StateWorking
+}
+
+// TickerLine renders the cross-project attention summary shown in a managed
+// session's status bar: participants waiting in *other* projects, nothing
+// else — empty when nobody needs you (issue #4). Projects arrive pinned-first
+// from ListProjects and stay that way.
+func TickerLine(cfg Config, projects []Project, current string) string {
+	var parts []string
+	for _, p := range projects {
+		if p.Name == current {
+			continue
+		}
+		var roles []string
+		for _, w := range p.Windows {
+			if stateOf(cfg, w, false) == StateWaiting {
+				roles = append(roles, w.RoleName()+"⚠")
+			}
+		}
+		if len(roles) > 0 {
+			parts = append(parts, p.Name+": "+strings.Join(roles, " "))
+		}
+	}
+	return strings.Join(parts, "  ")
 }
 
 // classifyTitle reads the state Claude Code (and friends) encode in the pane

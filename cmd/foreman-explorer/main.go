@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"fyne.io/systray"
@@ -125,7 +124,7 @@ func openInTerminal(project, role string) {
 			fm = sibling
 		}
 	}
-	cmd := fmt.Sprintf("%s %s go %s", shellQuote(fm), shellQuote(project), shellQuote(role))
+	cmd := fmt.Sprintf("%s %s go %s", core.ShellQuote(fm), core.ShellQuote(project), core.ShellQuote(role))
 	script := `on run argv
 	tell application "Terminal"
 		activate
@@ -133,12 +132,6 @@ func openInTerminal(project, role string) {
 	end tell
 end run`
 	exec.Command("osascript", "-e", script, cmd).Run()
-}
-
-// shellQuote makes s safe as a single sh word: wrapped in single quotes,
-// with embedded single quotes escaped as '\”.
-func shellQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func exists(p string) bool {

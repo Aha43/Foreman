@@ -113,6 +113,23 @@ func TestFindWindowErrorListsAvailable(t *testing.T) {
 	}
 }
 
+func TestShellQuote(t *testing.T) {
+	cases := map[string]string{
+		"plain":                    "'plain'",
+		"My Project":               "'My Project'",
+		"x; rm -rf ~":              "'x; rm -rf ~'",
+		`back"quote`:               `'back"quote'`,
+		"it's":                     `'it'\''s'`,
+		"$(whoami)":                "'$(whoami)'",
+		"/Users/First Last/bin/fm": "'/Users/First Last/bin/fm'",
+	}
+	for in, want := range cases {
+		if got := ShellQuote(in); got != want {
+			t.Errorf("ShellQuote(%q) = %s, want %s", in, got, want)
+		}
+	}
+}
+
 func TestProjectColorStable(t *testing.T) {
 	a, b := ProjectColor("NamWeb"), ProjectColor("NamWeb")
 	if a != b || a == "" {
