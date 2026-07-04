@@ -213,12 +213,26 @@ func cmdList(project string) error {
 	if err != nil {
 		return err
 	}
+	cfg := core.LoadConfig()
 	tw := tabwriter.NewWriter(os.Stdout, 2, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "TERMINAL\tRUNNING\tACTIVITY")
+	fmt.Fprintln(tw, "TERMINAL\tSTATE\tRUNNING\tACTIVITY")
 	for _, w := range ws {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", w.RoleName(), core.WindowStatus(w), core.HumanAge(w.Activity))
+		st := core.StateOf(cfg, w)
+		fmt.Fprintf(tw, "%s\t%s%s\t%s\t%s\n",
+			w.RoleName(), st, stateMark(st), core.WindowStatus(w), core.HumanAge(w.Activity))
 	}
 	return tw.Flush()
+}
+
+// stateMark flags the states that want a glance; working stays quiet.
+func stateMark(s core.State) string {
+	switch s {
+	case core.StateWaiting:
+		return "⚠"
+	case core.StateDone:
+		return "○"
+	}
+	return ""
 }
 
 func cmdListAll() error {
@@ -230,6 +244,7 @@ func cmdListAll() error {
 		fmt.Println("no projects")
 		return nil
 	}
+	cfg := core.LoadConfig()
 	tw := tabwriter.NewWriter(os.Stdout, 2, 4, 2, ' ', 0)
 	for _, p := range projects {
 		marker := " "
@@ -245,7 +260,8 @@ func cmdListAll() error {
 		}
 		var parts []string
 		for _, w := range p.Windows {
-			parts = append(parts, fmt.Sprintf("%s:%s", w.RoleName(), core.WindowStatus(w)))
+			parts = append(parts, fmt.Sprintf("%s%s:%s",
+				w.RoleName(), stateMark(core.StateOf(cfg, w)), core.WindowStatus(w)))
 		}
 		plural := "s"
 		if len(p.Windows) == 1 {
