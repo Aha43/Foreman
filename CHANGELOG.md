@@ -8,6 +8,10 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **MIT license.** The repo is now properly open source. Closes #10.
+
 ## [0.1.0] - 2026-07-04
 
 The MVP: project-organized terminals on top of tmux, plus the macOS menu bar explorer.
