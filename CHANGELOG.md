@@ -16,6 +16,11 @@ minor = features (breaking changes allowed), patch = fixes.
   right terminal instead of breaking or executing something else. Found by Codex review.
   Closes #30.
 
+- **Explorer: Refresh can't race the timer anymore.** The 10-second timer and the Refresh menu
+  item both triggered menu rebuilds concurrently — two at once could close the same channel
+  twice (a crash) or mutate the menu mid-rebuild. All rebuilds now run on one goroutine; Refresh
+  just asks it to go. Found by Codex review. Closes #31.
+
 ## [0.3.0] - 2026-07-04
 
 The observation layer's core: foreman now tells you what every agent is doing — working,
