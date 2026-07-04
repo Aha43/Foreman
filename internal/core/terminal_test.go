@@ -1,9 +1,12 @@
 package core
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
+
+var errFake = errors.New("fake tmux failure")
 
 // recorders swap both seams and log every call; restored via t.Cleanup.
 func recordCalls(t *testing.T, tmuxOut func(args []string) (string, bool), osaOut string) (tmuxCalls, osaCalls *[]string) {
@@ -16,7 +19,7 @@ func recordCalls(t *testing.T, tmuxOut func(args []string) (string, bool), osaOu
 		if out, ok := tmuxOut(args); ok {
 			return []byte(out + "\n"), nil
 		}
-		return []byte(""), nil
+		return []byte("boom"), errFake
 	}
 	runOsascript = func(args ...string) (string, error) {
 		oc = append(oc, strings.Join(args, " "))
@@ -72,30 +75,74 @@ func TestCloseTermWindowUntrackedIsNoop(t *testing.T) {
 	}
 }
 
-func TestSweepClosesOnlyOrphans(t *testing.T) {
-	tmuxCalls, osaCalls := recordCalls(t, func(args []string) (string, bool) {
+// sweepFake builds a tmux fake for one sweep pass over the given option
+// listing and attached-clients output.
+func sweepFake(listing, clients string) func(args []string) (string, bool) {
+	return func(args []string) (string, bool) {
 		switch {
 		case args[0] == "show-options" && len(args) == 2: // the -s listing
-			return "@fm_win_ttys012 77\n@fm_win_ttys999 88\nstatus-interval 15", true
-		case args[0] == "show-options": // per-key value lookup
-			if strings.Contains(strings.Join(args, " "), "ttys012") {
-				return "77", true
-			}
-			return "88", true
+			return listing, true
+		case args[0] == "show-options": // per-key value lookup (CloseTermWindow)
+			return "77?", true
 		case args[0] == "list-clients":
-			return "/dev/ttys999", true // ttys999 still attached
+			return clients, true
 		}
 		return "", true
-	}, "")
+	}
+}
+
+func TestSweepFirstAbsenceOnlyStrikes(t *testing.T) {
+	tmuxCalls, osaCalls := recordCalls(t,
+		sweepFake("@fm_win_ttys012 77\nstatus-interval 15", ""), "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("first absence must not close, got %v", *osaCalls)
+	}
+	if !strings.Contains(strings.Join(*tmuxCalls, ";"), "set-option -s @fm_win_ttys012 77?") {
+		t.Errorf("want a strike recorded, got %v", *tmuxCalls)
+	}
+}
+
+func TestSweepSecondAbsenceCloses(t *testing.T) {
+	tmuxCalls, osaCalls := recordCalls(t,
+		sweepFake(`@fm_win_ttys012 "77?"`+"\n@fm_win_ttys999 88", "/dev/ttys999"), "")
 	SweepTermWindows()
 	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " /dev/ttys012") {
-		t.Errorf("want exactly the orphan (ttys012) closed, got %v", *osaCalls)
+		t.Errorf("want exactly the struck orphan closed, got %v", *osaCalls)
 	}
 	joined := strings.Join(*tmuxCalls, ";")
 	if !strings.Contains(joined, "set-option -s -u @fm_win_ttys012") {
 		t.Errorf("orphan not forgotten: %s", joined)
 	}
-	if strings.Contains(joined, "-u @fm_win_ttys999") {
-		t.Errorf("attached window must stay tracked: %s", joined)
+	if strings.Contains(joined, "@fm_win_ttys999 88?") || strings.Contains(joined, "-u @fm_win_ttys999") {
+		t.Errorf("attached window must stay untouched: %s", joined)
+	}
+}
+
+func TestSweepReattachClearsStrike(t *testing.T) {
+	tmuxCalls, osaCalls := recordCalls(t,
+		sweepFake(`@fm_win_ttys012 "77?"`, "/dev/ttys012"), "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("reattached client must not be closed, got %v", *osaCalls)
+	}
+	if !strings.Contains(strings.Join(*tmuxCalls, ";"), "set-option -s @fm_win_ttys012 77") {
+		t.Errorf("want the strike cleared, got %v", *tmuxCalls)
+	}
+}
+
+func TestSweepAbortsWhenClientQueryFails(t *testing.T) {
+	_, osaCalls := recordCalls(t, func(args []string) (string, bool) {
+		if args[0] == "show-options" && len(args) == 2 {
+			return "@fm_win_ttys012 77", true
+		}
+		if args[0] == "list-clients" {
+			return "", false // query FAILS — must not read as "no clients"
+		}
+		return "", true
+	}, "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("uncertain client state must abort the sweep, got %v", *osaCalls)
 	}
 }

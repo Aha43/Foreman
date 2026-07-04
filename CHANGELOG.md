@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Window cleanup can't overreach.** The explorer's sweep aborts when tmux's client list can't
+  be read (uncertainty no longer looks like "no clients" and reaps every tracked window), and a
+  window is only closed after two consecutive absent observations — so a just-opened window
+  whose client hasn't attached yet survives. Cleanup also closes only the foreman *tab*, never
+  a whole window carrying user-added tabs. Found by Codex review. Closes #47, #48.
+
 ### Added
 
 - **`go --window`.** Open a participant's view in a new Terminal window instead of switching

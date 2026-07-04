@@ -81,13 +81,20 @@ func CloseTermWindow(tty string) {
 
 // SweepTermWindows closes tracked windows whose tmux client no longer exists
 // — views that ended without passing through go/done (crashes, manual
-// detach). Called from the explorer's poll.
+// detach). Called from the explorer's poll. Two safety rules (issue #48):
+// a failed client query aborts the sweep (uncertainty must not read as "no
+// clients" and reap everything), and a window is only closed on the second
+// consecutive absent observation — a "?" strike on the option value — so a
+// newborn window whose client hasn't attached yet survives the race.
 func SweepTermWindows() {
 	out, err := Tmux("show-options", "-s")
 	if err != nil {
 		return
 	}
-	clients, _ := Tmux("list-clients", "-F", "#{client_name}")
+	clients, err := Tmux("list-clients", "-F", "#{client_name}")
+	if err != nil {
+		return
+	}
 	attached := map[string]bool{}
 	for _, c := range strings.Split(clients, "\n") {
 		if c != "" {
@@ -95,12 +102,21 @@ func SweepTermWindows() {
 		}
 	}
 	for _, line := range strings.Split(out, "\n") {
-		name, _, ok := strings.Cut(line, " ")
+		name, value, ok := strings.Cut(line, " ")
 		if !ok || !strings.HasPrefix(name, "@fm_win_") {
 			continue
 		}
-		if tty := strings.TrimPrefix(name, "@fm_win_"); !attached[tty] {
+		value = strings.Trim(value, `"`)
+		tty := strings.TrimPrefix(name, "@fm_win_")
+		switch {
+		case attached[tty]:
+			if strings.HasSuffix(value, "?") { // back: clear the strike
+				Tmux("set-option", "-s", name, strings.TrimSuffix(value, "?"))
+			}
+		case strings.HasSuffix(value, "?"): // second absence: really gone
 			CloseTermWindow("/dev/" + tty)
+		default: // first absence: strike, close next sweep if still gone
+			Tmux("set-option", "-s", name, value+"?")
 		}
 	}
 }
