@@ -13,7 +13,8 @@ usage:
   foreman init                     write a starter config to edit
   foreman list                     all projects and their terminals
   foreman <project> new <role>     new terminal in the project (runs role preset, if any)
-  foreman <project> go <role>      move that terminal's view here (--mirror to view alongside)
+  foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
+                                   --window to open a new Terminal window instead)
   foreman <project> list           terminals in the project
   foreman <project> adopt <role>   pull the current terminal into the project
   foreman <project> done [role]    close one terminal, or the whole project
@@ -81,7 +82,11 @@ func main() {
 		fail(cmdNew(project, arg))
 	case "go":
 		requireArg(verb, arg)
-		fail(cmdGo(project, arg, len(args) > 3 && args[3] == "--mirror"))
+		if hasFlag(args[3:], "--window") {
+			fail(cmdGoWindow(project, arg))
+		} else {
+			fail(cmdGo(project, arg, hasFlag(args[3:], "--mirror")))
+		}
 	case "list":
 		fail(cmdList(project))
 	case "adopt":
@@ -104,6 +109,15 @@ func main() {
 // (list/init/help were already taken by the global commands).
 var projectVerbs = map[string]bool{
 	"new": true, "go": true, "adopt": true, "done": true, "pin": true, "unpin": true,
+}
+
+func hasFlag(rest []string, flag string) bool {
+	for _, a := range rest {
+		if a == flag {
+			return true
+		}
+	}
+	return false
 }
 
 func requireArg(verb, arg string) {
