@@ -54,10 +54,25 @@ func cmdNew(project, role string) error {
 		}
 	}
 	fmt.Printf("created %s/%s in %s\n", project, role, dir)
+	// The typical next step is go, so offer it. Only on a TTY — scripted
+	// use creates without going, as before.
+	if stdinIsTTY() {
+		fmt.Printf("go to %s? [Y/n] ", role)
+		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		if ans := strings.ToLower(strings.TrimSpace(line)); ans == "" || ans == "y" || ans == "yes" {
+			return cmdGo(project, role, false)
+		}
+		return nil
+	}
 	if !core.InsideTmux() {
 		fmt.Printf("  foreman %s go %s   # to jump there\n", project, role)
 	}
 	return nil
+}
+
+func stdinIsTTY() bool {
+	fi, err := os.Stdin.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
 // cmdGo moves the project's view to the invoking terminal. Any other client

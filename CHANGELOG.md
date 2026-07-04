@@ -16,6 +16,10 @@ minor = features (breaking changes allowed), patch = fixes.
   name. The decision is echoed once (`foreman: project NamWeb (from config root)`). Verb names
   become reserved project names; bare `foreman list` stays the all-projects overview. Closes #8.
 
+- **`new` offers to go to the just-created terminal.** After creating, `new` asks
+  `go to coder? [Y/n]` — plain Enter jumps there via the normal `go` move semantics. The prompt
+  only appears on a TTY, so scripted use creates without going, as before. Closes #9.
+
 - **MIT license.** The repo is now properly open source. Closes #10.
 
 ## [0.1.0] - 2026-07-04
