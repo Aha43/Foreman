@@ -109,6 +109,17 @@ func cmdAdopt(project, role string) error {
 	if err != nil {
 		return err
 	}
+	// Same guard as new: a role is an identity — two windows with the same
+	// @fm_role would make go/done resolve arbitrarily.
+	if core.SessionExists(project) {
+		if w, ferr := core.FindWindow(project, role); ferr == nil {
+			if w.ID == wid {
+				return fmt.Errorf("this terminal is already %s/%s", project, role)
+			}
+			return fmt.Errorf("project %s already has a %q terminal (%s) — pick another role name",
+				project, role, w.ID)
+		}
+	}
 	if !core.SessionExists(project) {
 		if _, err := core.Tmux("new-session", "-d", "-s", core.SessionName(project), "-n", "__fm_placeholder"); err != nil {
 			return err
