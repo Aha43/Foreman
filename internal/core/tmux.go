@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -172,11 +173,28 @@ func StyleSession(project string) {
 	// The cross-project ticker (issue #4): tmux re-runs the #() command on
 	// its redraw schedule — tmux is the scheduler, no watcher process.
 	// Absolute binary path, because tmux runs #() with a minimal PATH.
-	if exe, err := os.Executable(); err == nil {
+	if bin := tickerBinary(); bin != "" {
 		Tmux("set-option", "-t", s, "status-interval", "15")
 		Tmux("set-option", "-t", s, "status-right-length", "60")
 		Tmux("set-option", "-t", s, "status-right",
 			fmt.Sprintf("#[fg=colour214]#(%s __ticker %s)#[default]",
-				ShellQuote(exe), ShellQuote(project)))
+				ShellQuote(bin), ShellQuote(project)))
 	}
+}
+
+// tickerBinary picks the path baked into status-right. The PATH-resolved
+// install wins over os.Executable, which can be a go-run temp dir or a
+// scratch build that won't outlive the session (issue #37). Styling is also
+// re-stamped on ordinary commands, so a moved install self-heals.
+func tickerBinary() string {
+	if p, err := exec.LookPath("foreman"); err == nil {
+		if abs, err := filepath.Abs(p); err == nil {
+			return abs
+		}
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return exe
 }

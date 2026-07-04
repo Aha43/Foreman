@@ -28,6 +28,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **The ticker survives the binary moving.** The status-bar command now prefers the
+  PATH-resolved `foreman` over the running executable's path (which can be a `go run` temp dir
+  or scratch build), and session styling is re-stamped on `go` and `pin` — so existing sessions
+  self-heal toward the binary you actually use. Found by Codex review. Closes #37.
+
 - **Explorer: clicking a participant is injection-safe.** The `fm … go …` command reaches
   AppleScript as an argument (never spliced into the script) and every shell argument is
   quoted — so spaces, quotes, or metacharacters in project/role names or the fm path open the
