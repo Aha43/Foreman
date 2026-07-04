@@ -109,6 +109,10 @@ func cmdGo(project, role string, mirror bool) error {
 	if mirror {
 		return core.TmuxExec("attach-session", "-t", "="+core.SessionName(project))
 	}
+	// Detach current viewers ourselves (closing their foreman-opened
+	// windows) before exec replaces this process; -d stays as a stragglers
+	// net for clients attaching in the gap.
+	core.DetachViewers(project)
 	return core.TmuxExec("attach-session", "-d", "-t", "="+core.SessionName(project))
 }
 
@@ -189,8 +193,16 @@ func cmdDone(project, role string) error {
 		fmt.Println("aborted")
 		return nil
 	}
+	// Remember who was viewing: their foreman-opened windows become husks
+	// the moment the session dies (issue #43).
+	viewers, _ := core.Tmux("list-clients", "-t", core.SessionName(project), "-F", "#{client_name}")
 	if _, err := core.Tmux("kill-session", "-t", "="+core.SessionName(project)); err != nil {
 		return err
+	}
+	for _, c := range strings.Split(viewers, "\n") {
+		if c != "" {
+			core.CloseTermWindow(c)
+		}
 	}
 	fmt.Printf("closed project %s\n", project)
 	return nil

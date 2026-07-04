@@ -61,6 +61,9 @@ func rebuild() {
 	done = make(chan struct{})
 	systray.ResetMenu()
 
+	// Collect windows whose client ended without passing through go/done.
+	core.SweepTermWindows()
+
 	cfg := core.LoadConfig()
 	projects, _ := core.ListProjects()
 	if len(projects) == 0 {
@@ -151,11 +154,11 @@ func onClick(item *systray.MenuItem, d chan struct{}, project, role string) {
 	}
 }
 
-// openInTerminal opens a Terminal.app window running "fm <project> go <role>";
-// with go's move semantics the participant's view lands there and any other
-// viewer detaches. The command reaches AppleScript as an argv item (never
-// interpolated into the script) and every shell argument is quoted, so
-// spaces or metacharacters in names and paths stay inert (issue #30).
+// openInTerminal opens a tracked Terminal.app window running
+// "fm <project> go <role>"; with go's move semantics the participant's view
+// lands there and any other viewer detaches. Tracking means foreman closes
+// the window again once its view moves away (issue #43). Every shell
+// argument is quoted (issue #30).
 func openInTerminal(project, role string) {
 	fm := "fm"
 	if exe, err := os.Executable(); err == nil {
@@ -164,13 +167,7 @@ func openInTerminal(project, role string) {
 		}
 	}
 	cmd := fmt.Sprintf("%s %s go %s", core.ShellQuote(fm), core.ShellQuote(project), core.ShellQuote(role))
-	script := `on run argv
-	tell application "Terminal"
-		activate
-		do script (item 1 of argv)
-	end tell
-end run`
-	exec.Command("osascript", "-e", script, cmd).Run()
+	core.OpenTerminal(cmd)
 }
 
 func exists(p string) bool {

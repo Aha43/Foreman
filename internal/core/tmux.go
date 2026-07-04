@@ -139,6 +139,27 @@ func DetachOtherClients(project string) {
 	for _, c := range strings.Split(out, "\n") {
 		if c != "" && c != self {
 			Tmux("detach-client", "-t", c)
+			// If foreman opened that client's Terminal window, close the
+			// husk it just became (issue #43).
+			CloseTermWindow(c)
+		}
+	}
+}
+
+// DetachViewers detaches every client viewing the project and closes their
+// foreman-opened windows — the outside-tmux go path, where the caller isn't
+// a tmux client yet so DetachOtherClients' self-exclusion doesn't apply.
+// attach -d would detach them too, but silently: the husks would stay open
+// (issue #43).
+func DetachViewers(project string) {
+	out, err := Tmux("list-clients", "-t", SessionName(project), "-F", "#{client_name}")
+	if err != nil || out == "" {
+		return
+	}
+	for _, c := range strings.Split(out, "\n") {
+		if c != "" {
+			Tmux("detach-client", "-t", c)
+			CloseTermWindow(c)
 		}
 	}
 }
