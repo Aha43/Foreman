@@ -21,6 +21,10 @@ minor = features (breaking changes allowed), patch = fixes.
   visible lines) for agents that don't announce themselves. Defaults to `working` when unsure.
   Closes #2.
 
+- **Participant state in `foreman list`.** The project list gains a STATE column next to the
+  pane title; the global list marks only the states that want a glance on the role tag —
+  `planner⚠` (waiting), `build○` (done) — so `working` stays visually quiet. Closes #3.
+
 - **CI.** A GitHub Actions `check` workflow runs `make check` (gofmt + vet + test) on every PR
   and push to `main` — the automated version of the workflow doc's PR gate. Closes #21.
 
