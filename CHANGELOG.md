@@ -28,6 +28,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **`adopt` rejects duplicate roles.** Adopting a terminal under a role the project already has
+  would create two windows with the same identity, making `go`/`done` resolve whichever came
+  first — possibly switching to or killing the wrong terminal. `adopt` now errors like `new`
+  does. Found by Codex review. Closes #17.
+
 - **The explorer's source is actually in the repository.** The unanchored `.gitignore` patterns
   (`foreman-explorer`) also matched `cmd/foreman-explorer/`, so its source was never committed —
   a fresh clone couldn't build. Ignores are now anchored to the repo root and the missing source
