@@ -21,6 +21,11 @@ minor = features (breaking changes allowed), patch = fixes.
   projects only; everything else stays glanceable in the menu, which now also carries the
   ⚠/○ state marks. Closes #5.
 
+- **"How foreman works" doc.** `docs/how-it-works.md` — the terminal-server model, foreman's
+  thin semantic layer, where state lives, and snapshot-vs-memory, written for readers new to
+  tmux. Linked from the README, whose roadmap now reflects the completed observation epic.
+  Closes #24.
+
 ### Fixed
 
 - **Explorer: clicking a participant is injection-safe.** The `fm … go …` command reaches
