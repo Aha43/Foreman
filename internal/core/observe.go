@@ -1,5 +1,7 @@
 package core
 
+import "strings"
+
 // State is what a participant is doing, observed as a snapshot — computed
 // fresh from the tmux server on demand, never stored (see issue #1).
 type State string
@@ -25,6 +27,56 @@ func StateOf(cfg Config, w Window) State {
 			return StateDone
 		}
 		return StateShell
+	}
+	// Agent-aware heuristic (issue #2): the pane title first — apps like
+	// Claude Code set it deliberately, which beats guessing from content.
+	if s := classifyTitle(paneTitle(w)); s != "" {
+		return s
+	}
+	// Title uninformative: peek at the pane's bottom lines. Content matching
+	// self-pollutes easily (output *mentioning* a prompt looks like one), so
+	// the pattern set stays small and the default is working.
+	if out, err := Tmux("capture-pane", "-p", "-t", w.ID); err == nil {
+		if classifyOutput(out) == StateWaiting {
+			return StateWaiting
+		}
+	}
+	return StateWorking
+}
+
+// classifyTitle reads the state Claude Code (and friends) encode in the pane
+// title: an animating braille spinner char while busy, ✳ when the agent
+// wants attention. Empty result means the title says nothing about state.
+func classifyTitle(title string) State {
+	r := []rune(title)
+	if len(r) == 0 {
+		return ""
+	}
+	switch {
+	case r[0] >= 0x2800 && r[0] <= 0x28FF: // braille spinner frames
+		return StateWorking
+	case r[0] == '✳':
+		return StateWaiting
+	}
+	return ""
+}
+
+// classifyOutput inspects the tail of a pane for an input prompt. Only the
+// last few visible lines count — anything older is history, not a prompt.
+func classifyOutput(text string) State {
+	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+	from := len(lines) - 6
+	if from < 0 {
+		from = 0
+	}
+	for _, line := range lines[from:] {
+		t := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(t, "❯"), // selector cursor (permission menus)
+			strings.HasSuffix(t, "[y/n]"), strings.HasSuffix(t, "[Y/n]"),
+			strings.HasSuffix(t, "(y/n)"), strings.HasSuffix(t, "(Y/n)"):
+			return StateWaiting
+		}
 	}
 	return StateWorking
 }

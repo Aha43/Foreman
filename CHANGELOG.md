@@ -15,6 +15,12 @@ minor = features (breaking changes allowed), patch = fixes.
   terminal), else `working`. Computed fresh from the tmux server on demand, nothing stored.
   Closes #1.
 
+- **Observation: the `waiting` state.** An agent that wants your attention is detected
+  title-first — Claude Code sets a braille spinner while busy and `✳` when idle — with a
+  small, table-tested pane-content fallback (selector cursor, `[y/n]` prompts in the last
+  visible lines) for agents that don't announce themselves. Defaults to `working` when unsure.
+  Closes #2.
+
 - **CI.** A GitHub Actions `check` workflow runs `make check` (gofmt + vet + test) on every PR
   and push to `main` — the automated version of the workflow doc's PR gate. Closes #21.
 
