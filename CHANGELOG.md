@@ -8,6 +8,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-04
+
+Sprint 1 — CLI ergonomics: the project name becomes optional, `new` flows straight into `go`,
+plus the license, a makefile, and two release-blockers caught by a Codex review.
+
 ### Added
 
 - **Makefile.** `make install` builds and installs `foreman` (+ `fm` symlink) and `fm-explorer`
@@ -57,5 +62,6 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Aha43/Foreman/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Aha43/Foreman/releases/tag/v0.1.0
