@@ -1,6 +1,7 @@
 # foreman
 
 Organize terminals by **project**, on top of tmux.
+New to the terminal-server idea? Read [how foreman works](docs/how-it-works.md).
 
 Modern dev work is terminal-heavy, and AI agents made it worse: several projects
 run at once (you work on B while A's agents execute), each with a mix of agent
@@ -101,17 +102,20 @@ current directory. Role commands run *inside* the shell, so the window survives
 the process exiting. Unknown roles just get a plain shell — manual-work
 terminals are first-class participants.
 
+## Observation
+
+foreman tells you what every participant is doing without attaching: `foreman list` shows a
+STATE per terminal (`working`, `waiting⚠`, `done○`, `shell`, `exited`), the status bar of
+each managed terminal tickers who's waiting in *other* projects, and the explorer posts a
+macOS notification when an agent in a **pinned** project starts waiting. Detection reads
+what agents announce (Claude Code signals busy/idle in its pane title) with a careful
+content fallback — see [how it works](docs/how-it-works.md).
+
 ## Roadmap
 
 Tracked as [GitHub issues](https://github.com/Aha43/Foreman/issues), grouped into sprint
 milestones — see [docs/workflow.md](docs/workflow.md). The broad strokes:
 
-- **Observation layer**: notice participant state changes without attaching —
-  process finished (reliable, via tmux hooks like `pane-died` / `monitor-silence`)
-  and agent-waiting-for-input (heuristic on `capture-pane` output). Surface in
-  `foreman list`, as a status-bar ticker in other projects' terminals, and as
-  macOS notifications — interrupting only for pinned (priority) projects.
-- Cross-project status in the status bar (`A: planner waiting ⚠` while you're in B).
 - `go --window`: open the terminal in a new macOS window instead of switching in place.
 - tmux control mode (`tmux -CC`) event stream instead of polling, once the
   heuristics settle.
