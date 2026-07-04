@@ -26,6 +26,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 - **MIT license.** The repo is now properly open source. Closes #10.
 
+### Fixed
+
+- **The explorer's source is actually in the repository.** The unanchored `.gitignore` patterns
+  (`foreman-explorer`) also matched `cmd/foreman-explorer/`, so its source was never committed —
+  a fresh clone couldn't build. Ignores are now anchored to the repo root and the missing source
+  is committed. Found by Codex review. Closes #16.
+
 ## [0.1.0] - 2026-07-04
 
 The MVP: project-organized terminals on top of tmux, plus the macOS menu bar explorer.
