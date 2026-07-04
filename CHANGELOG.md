@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-04
+
+The observation epic completed: the status bar tickers who's waiting in other projects (tmux
+itself does the scheduling — no daemon), the explorer notifies when a pinned project's agent
+wants you (its memory stored in the tmux server, like everything else), and the how-it-works
+doc explains the whole model for tmux newcomers. Hardened by a Codex review (two findings,
+both fixed pre-release) — a rhythm now codified in `.codex-review`.
+
 ### Added
 
 - **Cross-project ticker in the status bar.** Every managed terminal's status bar now shows,
@@ -146,7 +154,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Aha43/Foreman/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Aha43/Foreman/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Aha43/Foreman/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Aha43/Foreman/releases/tag/v0.1.0
