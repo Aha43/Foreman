@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/arnehalvorsen/foreman/internal/core"
 )
@@ -52,6 +53,15 @@ func main() {
 	if args[0] == "__ticker" {
 		if len(args) > 1 {
 			fail(cmdTicker(args[1]))
+		}
+		return
+	}
+	// Plumbing for done's detached cleanup worker (issue #46): closes the
+	// tracked windows of the given ttys after the kill has landed.
+	if args[0] == "__closewins" {
+		time.Sleep(500 * time.Millisecond)
+		for _, tty := range args[1:] {
+			core.CloseTermWindow(tty)
 		}
 		return
 	}

@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 
 	"golang.org/x/term"
@@ -210,18 +212,38 @@ func cmdDone(project, role string) error {
 		return nil
 	}
 	// Remember who was viewing: their foreman-opened windows become husks
-	// the moment the session dies (issue #43).
+	// the moment the session dies (issue #43). The cleanup must survive this
+	// very process — run from inside the project, kill-session takes our own
+	// pane with it — so a detached worker does the closing (issue #46).
 	viewers, _ := core.Tmux("list-clients", "-t", core.SessionName(project), "-F", "#{client_name}")
+	spawnCloseWorker(strings.Split(viewers, "\n"))
 	if _, err := core.Tmux("kill-session", "-t", "="+core.SessionName(project)); err != nil {
 		return err
 	}
-	for _, c := range strings.Split(viewers, "\n") {
-		if c != "" {
-			core.CloseTermWindow(c)
-		}
-	}
 	fmt.Printf("closed project %s\n", project)
 	return nil
+}
+
+// spawnCloseWorker starts a detached __closewins process (its own session,
+// no inherited stdio) so tracked-window cleanup survives kill-session taking
+// this process down with the project (issue #46).
+func spawnCloseWorker(ttys []string) {
+	bin := core.BinaryPath()
+	if bin == "" {
+		return
+	}
+	args := []string{"__closewins"}
+	for _, t := range ttys {
+		if t != "" {
+			args = append(args, t)
+		}
+	}
+	if len(args) == 1 {
+		return
+	}
+	cmd := exec.Command(bin, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.Start()
 }
 
 func cmdPin(project string, on bool) error {
