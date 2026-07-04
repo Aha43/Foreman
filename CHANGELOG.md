@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **No more soulless windows.** Terminal windows that foreman opens (explorer clicks) are now
+  tracked — in tmux server options, like everything else — and **closed automatically** the
+  moment their view moves away: `go` detaching viewers, whole-project `done`, or the explorer's
+  sweep for stragglers. Windows you opened yourself are never touched. Closes #43.
+
 ## [0.4.0] - 2026-07-04
 
 The observation epic completed: the status bar tickers who's waiting in other projects (tmux
