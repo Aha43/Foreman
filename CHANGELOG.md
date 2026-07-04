@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-04
+
+The observation layer's core: foreman now tells you what every agent is doing — working,
+waiting for you, done, or gone — without attaching. Built on the testing foundation laid the
+same day (25+ Go tests behind a tmux seam, CI on every PR), and shaken down live against real
+Claude Code sessions, including a genuine permission prompt.
+
 ### Fixed
 
 - **Scripted `new` no longer prompts (or worse, auto-goes).** `/dev/null` is a character
@@ -97,6 +104,7 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Aha43/Foreman/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Aha43/Foreman/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Aha43/Foreman/releases/tag/v0.1.0
