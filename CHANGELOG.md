@@ -10,6 +10,12 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Added
 
+- **The project name can be omitted.** `foreman new coder` (and `go`, `adopt`, `done`,
+  `pin`/`unpin`) infers the project: inside a managed terminal, that terminal's project;
+  otherwise the configured `root` containing the current directory; otherwise the directory's
+  name. The decision is echoed once (`foreman: project NamWeb (from config root)`). Verb names
+  become reserved project names; bare `foreman list` stays the all-projects overview. Closes #8.
+
 - **MIT license.** The repo is now properly open source. Closes #10.
 
 ## [0.1.0] - 2026-07-04

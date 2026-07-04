@@ -19,6 +19,12 @@ foreman <project> done [role]    close one terminal, or the whole project
 foreman <project> pin|unpin      mark the project as priority (sorts first in list)
 ```
 
+The project name can be omitted — `foreman new coder` infers it: inside a
+managed terminal, that terminal's project; otherwise the configured project
+`root` containing your current directory; otherwise the directory's name.
+(Verb names — `new`, `go`, `list`, … — are therefore reserved as project
+names. Bare `foreman list` always shows all projects.)
+
 Example session:
 
 ```

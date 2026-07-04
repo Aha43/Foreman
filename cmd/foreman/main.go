@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/arnehalvorsen/foreman/internal/core"
 )
 
 const usage = `foreman — organize terminals by project, on top of tmux
@@ -16,6 +18,11 @@ usage:
   foreman <project> adopt <role>   pull the current terminal into the project
   foreman <project> done [role]    close one terminal, or the whole project
   foreman <project> pin|unpin      mark the project as priority
+
+<project> can be omitted (foreman new coder): inferred from the managed
+terminal you're in, else the configured root containing the current
+directory, else the directory's name. Verb names are reserved as
+project names. Bare "foreman list" always shows all projects.
 
 config: ~/.config/foreman/config.toml
   [role.planner]
@@ -38,6 +45,15 @@ func main() {
 	if args[0] == "init" {
 		fail(cmdInit())
 		return
+	}
+
+	// Verb in first position → the project was omitted: infer it and
+	// prepend, so the rest of the parse is unchanged.
+	if projectVerbs[args[0]] {
+		name, source, err := core.CurrentProject(core.LoadConfig())
+		fail(err)
+		fmt.Fprintf(os.Stderr, "foreman: project %s (from %s)\n", name, source)
+		args = append([]string{name}, args...)
 	}
 
 	project := args[0]
@@ -73,6 +89,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", verb, usage)
 		os.Exit(2)
 	}
+}
+
+// projectVerbs are the project-scoped verbs; in first position they mean
+// the project name was omitted. This reserves them as project names
+// (list/init/help were already taken by the global commands).
+var projectVerbs = map[string]bool{
+	"new": true, "go": true, "adopt": true, "done": true, "pin": true, "unpin": true,
 }
 
 func requireArg(verb, arg string) {
