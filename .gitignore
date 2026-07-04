@@ -1,2 +1,4 @@
-foreman
-foreman-explorer
+# Built binaries at the repo root only — unanchored patterns would also
+# swallow cmd/foreman/ and cmd/foreman-explorer/ (issue #16).
+/foreman
+/foreman-explorer
