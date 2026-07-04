@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-04
+
+Terminal window lifecycle: foreman now closes the windows it opens once their view moves away —
+no more `[detached]` husks — and `go --window` opens views in fresh tracked windows. Hardened by
+a Codex review cycle (three lifecycle findings, all fixed pre-release: tab-precise closing,
+uncertainty-safe two-strike sweeping, and cleanup that survives `done` killing its own process).
+
 ### Fixed
 
 - **Window cleanup can't overreach.** The explorer's sweep aborts when tmux's client list can't
@@ -173,7 +180,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Aha43/Foreman/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Aha43/Foreman/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Aha43/Foreman/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Aha43/Foreman/compare/v0.1.0...v0.2.0
