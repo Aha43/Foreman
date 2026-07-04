@@ -61,6 +61,7 @@ func rebuild() {
 	done = make(chan struct{})
 	systray.ResetMenu()
 
+	cfg := core.LoadConfig()
 	projects, _ := core.ListProjects()
 	if len(projects) == 0 {
 		systray.AddMenuItem("no projects", "").Disable()
@@ -73,7 +74,8 @@ func rebuild() {
 		header := systray.AddMenuItem(title, "")
 		header.Disable()
 		for _, w := range p.Windows {
-			label := fmt.Sprintf("   %s — %s", w.RoleName(), core.WindowStatus(w))
+			st := watch(cfg, p, w)
+			label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
 			item := systray.AddMenuItem(label, "click to open here")
 			go onClick(item, done, p.Name, w.RoleName())
 		}
@@ -99,6 +101,43 @@ func rebuild() {
 		case <-d:
 		}
 	}(done)
+}
+
+// watch is the observation epic's memory half (issue #5): compare this
+// look with the last one (stored as a tmux window option), record the new
+// state, and notify on a transition into waiting — pinned projects only,
+// everything else stays glanceable in this menu. Runs on the single
+// rebuilder goroutine, every 10s poll.
+func watch(cfg core.Config, p core.Project, w core.Window) core.State {
+	st := core.StateOf(cfg, w)
+	last := core.LastState(w)
+	if st != last {
+		core.RecordState(w, st)
+		// last == "" is the first look at this window: record silently.
+		if last != "" && st == core.StateWaiting && p.Pinned {
+			notify(fmt.Sprintf("%s is waiting in %s", w.RoleName(), p.Name))
+		}
+	}
+	return st
+}
+
+func stateMark(s core.State) string {
+	switch s {
+	case core.StateWaiting:
+		return "⚠"
+	case core.StateDone:
+		return "○"
+	}
+	return ""
+}
+
+// notify posts a macOS notification; the message travels as an osascript
+// argument, never interpolated into the script (same rule as issue #30).
+func notify(msg string) {
+	exec.Command("osascript",
+		"-e", "on run argv",
+		"-e", `display notification (item 1 of argv) with title "foreman"`,
+		"-e", "end run", msg).Run()
 }
 
 func onClick(item *systray.MenuItem, d chan struct{}, project, role string) {
