@@ -116,6 +116,22 @@ func cmdGo(project, role string, mirror bool) error {
 	return core.TmuxExec("attach-session", "-d", "-t", "="+core.SessionName(project))
 }
 
+// cmdGoWindow opens the participant's view in a new Terminal window instead
+// of switching in place (issue #6). The go running inside the new window
+// does the actual move; tracking (issue #43) means the window is closed
+// again once its view later moves away.
+func cmdGoWindow(project, role string) error {
+	if _, err := core.FindWindow(project, role); err != nil {
+		return err
+	}
+	bin := core.BinaryPath()
+	if bin == "" {
+		return fmt.Errorf("cannot locate the foreman binary")
+	}
+	return core.OpenTerminal(fmt.Sprintf("%s %s go %s",
+		core.ShellQuote(bin), core.ShellQuote(project), core.ShellQuote(role)))
+}
+
 func cmdAdopt(project, role string) error {
 	if !core.InsideTmux() {
 		return fmt.Errorf("adopt must run from inside a tmux terminal (the one to adopt)")

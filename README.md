@@ -13,7 +13,8 @@ terminal is a named *participant* in a *project*.
 foreman init                     write a starter config to edit
 foreman list                     all projects and their terminals
 foreman <project> new <role>     new terminal in the project (runs role preset, if any)
-foreman <project> go <role>      move that terminal's view here (--mirror to view alongside)
+foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
+                                 --window to open a new Terminal window instead)
 foreman <project> list           terminals in the project
 foreman <project> adopt <role>   pull the terminal you're in into the project
 foreman <project> done [role]    close one terminal, or the whole project
@@ -111,12 +112,15 @@ macOS notification when an agent in a **pinned** project starts waiting. Detecti
 what agents announce (Claude Code signals busy/idle in its pane title) with a careful
 content fallback — see [how it works](docs/how-it-works.md).
 
+Terminal windows that foreman opens (explorer clicks, `go --window`) are closed again
+automatically once their view moves elsewhere — no `[detached]` husks pile up. Windows you
+opened yourself are never touched.
+
 ## Roadmap
 
 Tracked as [GitHub issues](https://github.com/Aha43/Foreman/issues), grouped into sprint
 milestones — see [docs/workflow.md](docs/workflow.md). The broad strokes:
 
-- `go --window`: open the terminal in a new macOS window instead of switching in place.
 - tmux control mode (`tmux -CC`) event stream instead of polling, once the
   heuristics settle.
 

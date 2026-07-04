@@ -10,6 +10,10 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Added
 
+- **`go --window`.** Open a participant's view in a new Terminal window instead of switching
+  the current one in place — the window is tracked, so it's cleaned up again when the view
+  moves on. Closes #6.
+
 - **No more soulless windows.** Terminal windows that foreman opens (explorer clicks) are now
   tracked — in tmux server options, like everything else — and **closed automatically** the
   moment their view moves away: `go` detaching viewers, whole-project `done`, or the explorer's
