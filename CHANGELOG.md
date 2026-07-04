@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Scripted `new` no longer prompts (or worse, auto-goes).** `/dev/null` is a character
+  device, so the old TTY check misfired on `fm <p> new <role> < /dev/null` — showing the
+  `go to X? [Y/n]` prompt, reading EOF as default-yes, and failing with `open terminal failed`.
+  Now uses a real terminal check, and an EOF/read error on the prompt never means yes. Found by
+  the observation-layer live shakedown. Closes #28.
+
 ### Added
 
 - **Observation: reliable participant states.** New `State` snapshot in core — `exited` (pane

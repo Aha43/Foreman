@@ -8,6 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"golang.org/x/term"
+
 	"github.com/arnehalvorsen/foreman/internal/core"
 )
 
@@ -58,7 +60,12 @@ func cmdNew(project, role string) error {
 	// use creates without going, as before.
 	if stdinIsTTY() {
 		fmt.Printf("go to %s? [Y/n] ", role)
-		line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		if err != nil {
+			// EOF or a broken stdin is not an answer — never go on it.
+			fmt.Println()
+			return nil
+		}
 		if ans := strings.ToLower(strings.TrimSpace(line)); ans == "" || ans == "y" || ans == "yes" {
 			return cmdGo(project, role, false)
 		}
@@ -71,8 +78,9 @@ func cmdNew(project, role string) error {
 }
 
 func stdinIsTTY() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+	// A real terminal check — /dev/null is a character device too, so the
+	// ModeCharDevice heuristic misfires on scripted use (issue #28).
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
 
 // cmdGo moves the project's view to the invoking terminal. Any other client
