@@ -10,6 +10,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Added
 
+- **Observation: reliable participant states.** New `State` snapshot in core — `exited` (pane
+  dead), `done` (the role's command finished and dropped back to the shell), `shell` (manual
+  terminal), else `working`. Computed fresh from the tmux server on demand, nothing stored.
+  Closes #1.
+
 - **CI.** A GitHub Actions `check` workflow runs `make check` (gofmt + vet + test) on every PR
   and push to `main` — the automated version of the workflow doc's PR gate. Closes #21.
 
