@@ -146,16 +146,17 @@ func TestTickerLine(t *testing.T) {
 	}
 }
 
-func TestTickerLineSkipsCaptureFallback(t *testing.T) {
+func TestTickerLineUsesFullClassifier(t *testing.T) {
 	setHostname(t, "testhost")
-	// Uninformative title would trigger capture-pane in StateOf; the ticker
-	// path must not shell out — a failing fake proves it isn't consulted.
-	fakeTmux(t, nil)
+	// A titleless agent at a y/n prompt must show in the ticker exactly as
+	// it does in list and notifications — one classifier for all three
+	// surfaces (issue #38).
+	fakeTmux(t, map[string]string{"capture-pane": "Apply changes? (y/n)"})
 	projects := []Project{{Name: "B", Windows: []Window{
 		{ID: "@1", Role: "coder", Command: "aider", Title: "testhost"},
 	}}}
-	if got := TickerLine(Config{Roles: map[string]Role{}}, projects, "A"); got != "" {
-		t.Errorf("quick path must classify as working (quiet), got %q", got)
+	if got := TickerLine(Config{Roles: map[string]Role{}}, projects, "A"); got != "B: coder⚠" {
+		t.Errorf("got %q, want the capture-detected waiter", got)
 	}
 }
 
