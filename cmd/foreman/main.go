@@ -46,6 +46,14 @@ func main() {
 		fail(cmdInit())
 		return
 	}
+	// Plumbing for the status-bar ticker (set up by StyleSession); not part
+	// of the human-facing surface, so absent from usage.
+	if args[0] == "__ticker" {
+		if len(args) > 1 {
+			fail(cmdTicker(args[1]))
+		}
+		return
+	}
 
 	// Verb in first position → the project was omitted: infer it and
 	// prepend, so the rest of the parse is unchanged.

@@ -103,6 +103,51 @@ func TestStateOfCaptureFallback(t *testing.T) {
 	}
 }
 
+func TestTickerLine(t *testing.T) {
+	setHostname(t, "testhost")
+	cfg := cfgWithRoleCmds(map[string]string{"coder": "claude"})
+	projects := []Project{
+		{Name: "A", Windows: []Window{ // current project: skipped entirely
+			{Role: "planner", Command: "2.1.200", Title: "✳ waiting here"},
+		}},
+		{Name: "B", Windows: []Window{
+			{Role: "planner", Command: "2.1.200", Title: "✳ needs you"},
+			{Role: "coder", Command: "2.1.200", Title: "⠂ busy"}, // working: quiet
+			{Role: "human", Command: "zsh"},                      // shell: quiet
+		}},
+		{Name: "C", Windows: []Window{
+			{Role: "coder", Command: "2.1.200", Title: "⠐ busy"},
+		}},
+		{Name: "D", Windows: []Window{
+			{Role: "x", Command: "2.1.200", Title: "✳ a"},
+			{Role: "y", Command: "2.1.200", Title: "✳ b"},
+		}},
+	}
+	got := TickerLine(cfg, projects, "A")
+	want := "B: planner⚠  D: x⚠ y⚠"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	// Nobody waiting anywhere else → empty line, quiet status bar.
+	// (A's own waiting participant doesn't count from inside A.)
+	if got := TickerLine(cfg, []Project{projects[0], projects[2]}, "A"); got != "" {
+		t.Errorf("want empty when only current project waits, got %q", got)
+	}
+}
+
+func TestTickerLineSkipsCaptureFallback(t *testing.T) {
+	setHostname(t, "testhost")
+	// Uninformative title would trigger capture-pane in StateOf; the ticker
+	// path must not shell out — a failing fake proves it isn't consulted.
+	fakeTmux(t, nil)
+	projects := []Project{{Name: "B", Windows: []Window{
+		{ID: "@1", Role: "coder", Command: "aider", Title: "testhost"},
+	}}}
+	if got := TickerLine(Config{Roles: map[string]Role{}}, projects, "A"); got != "" {
+		t.Errorf("quick path must classify as working (quiet), got %q", got)
+	}
+}
+
 func TestStateOfDoneUsesRoleNameFallback(t *testing.T) {
 	// A window without @fm_role but whose *name* matches a preset role
 	// still counts as done when back at the shell.

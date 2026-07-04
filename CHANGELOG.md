@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **Cross-project ticker in the status bar.** Every managed terminal's status bar now shows,
+  on the right, who's waiting for you in *other* projects (`B: planner⚠`) — empty when nobody
+  is. tmux itself re-runs the check on its redraw schedule (~15s): no daemon, no stored state.
+  Applies to sessions created/adopted from now on. Closes #4.
+
 ### Fixed
 
 - **Explorer: clicking a participant is injection-safe.** The `fm … go …` command reaches

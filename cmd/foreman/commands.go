@@ -243,6 +243,17 @@ func stateMark(s core.State) string {
 	return ""
 }
 
+// cmdTicker prints the cross-project attention line for one status bar.
+// Runs on tmux's redraw schedule, so it must stay quiet and cheap.
+func cmdTicker(current string) error {
+	projects, err := core.ListProjects()
+	if err != nil || len(projects) == 0 {
+		return nil
+	}
+	fmt.Print(core.TickerLine(core.LoadConfig(), projects, current))
+	return nil
+}
+
 func cmdListAll() error {
 	projects, err := core.ListProjects()
 	if err != nil {
