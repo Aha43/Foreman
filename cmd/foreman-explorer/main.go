@@ -23,16 +23,36 @@ func main() {
 func onReady() {
 	systray.SetTitle("fm")
 	systray.SetTooltip("foreman — terminals by project")
-	rebuild()
+	// All rebuilds happen on this one goroutine — the timer and manual
+	// Refresh both feed it, so the done channel and the systray menu are
+	// never touched concurrently (issue #31).
 	go func() {
-		for range time.Tick(10 * time.Second) {
+		rebuild()
+		tick := time.Tick(10 * time.Second)
+		for {
+			select {
+			case <-tick:
+			case <-rebuildReq:
+			}
 			rebuild()
 		}
 	}()
 }
 
+// rebuildReq carries manual refresh requests to the rebuilder goroutine;
+// capacity 1 makes extra clicks while a rebuild is pending no-ops.
+var rebuildReq = make(chan struct{}, 1)
+
+func requestRebuild() {
+	select {
+	case rebuildReq <- struct{}{}:
+	default:
+	}
+}
+
 // done is closed on every rebuild so click-listener goroutines from the
-// previous menu generation exit instead of leaking.
+// previous menu generation exit instead of leaking. Only the rebuilder
+// goroutine touches it.
 var done chan struct{}
 
 func rebuild() {
@@ -66,8 +86,7 @@ func rebuild() {
 		for {
 			select {
 			case <-refresh.ClickedCh:
-				rebuild()
-				return
+				requestRebuild()
 			case <-d:
 				return
 			}
