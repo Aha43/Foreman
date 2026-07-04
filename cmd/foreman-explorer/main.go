@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"fyne.io/systray"
@@ -95,7 +96,9 @@ func onClick(item *systray.MenuItem, d chan struct{}, project, role string) {
 
 // openInTerminal opens a Terminal.app window running "fm <project> go <role>";
 // with go's move semantics the participant's view lands there and any other
-// viewer detaches.
+// viewer detaches. The command reaches AppleScript as an argv item (never
+// interpolated into the script) and every shell argument is quoted, so
+// spaces or metacharacters in names and paths stay inert (issue #30).
 func openInTerminal(project, role string) {
 	fm := "fm"
 	if exe, err := os.Executable(); err == nil {
@@ -103,11 +106,20 @@ func openInTerminal(project, role string) {
 			fm = sibling
 		}
 	}
-	script := fmt.Sprintf(`tell application "Terminal"
-	activate
-	do script "%s %s go %s"
-end tell`, fm, project, role)
-	exec.Command("osascript", "-e", script).Run()
+	cmd := fmt.Sprintf("%s %s go %s", shellQuote(fm), shellQuote(project), shellQuote(role))
+	script := `on run argv
+	tell application "Terminal"
+		activate
+		do script (item 1 of argv)
+	end tell
+end run`
+	exec.Command("osascript", "-e", script, cmd).Run()
+}
+
+// shellQuote makes s safe as a single sh word: wrapped in single quotes,
+// with embedded single quotes escaped as '\”.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func exists(p string) bool {

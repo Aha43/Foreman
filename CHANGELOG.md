@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Explorer: clicking a participant is injection-safe.** The `fm … go …` command reaches
+  AppleScript as an argument (never spliced into the script) and every shell argument is
+  quoted — so spaces, quotes, or metacharacters in project/role names or the fm path open the
+  right terminal instead of breaking or executing something else. Found by Codex review.
+  Closes #30.
+
 ## [0.3.0] - 2026-07-04
 
 The observation layer's core: foreman now tells you what every agent is doing — working,
