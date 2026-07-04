@@ -28,8 +28,9 @@ Not everything needs a sprint — off-cycle fixes ride on `main` and fold into t
 ## Branches and merging
 
 1. Branch off `main` per issue (`feature/<slug>` or `fix/<slug>`).
-2. Develop locally; `go build ./... && go vet ./...` (and tests, as they arrive) must pass.
-3. Open a PR and merge to `main`. Solo, so review is self-review — the PR still earns its keep
+2. Develop locally; `make check` (gofmt + vet + test) must pass.
+3. Open a PR and merge to `main`. CI (`.github/workflows/check.yml`) runs `make check` on every
+   PR and on `main` — the automated gate. Review is self-review — the PR still earns its keep
    as the changelog of record and the thing a Codex/Claude review can be pointed at.
 4. Every merged non-chore PR adds its entry under `## [Unreleased]` in `CHANGELOG.md`.
 
@@ -37,7 +38,7 @@ Not everything needs a sprint — off-cycle fixes ride on `main` and fold into t
 
 Current gaps, to add when they start paying for themselves:
 
-- **CI** — a GitHub Actions `check` job (build/vet/test) as the PR gate, then branch protection
-  on `main` requiring it.
+- **Branch protection on `main`** requiring the `check` job — deliberate hold-off: it puts a
+  ~1 min CI wait on every solo merge.
 - **Release automation** — a `release.yml` that publishes a GitHub Release (with prebuilt
   binaries) from a `v*` tag, as NamWeb does.

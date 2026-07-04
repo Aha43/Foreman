@@ -8,6 +8,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **CI.** A GitHub Actions `check` workflow runs `make check` (gofmt + vet + test) on every PR
+  and push to `main` — the automated version of the workflow doc's PR gate. Closes #21.
+
 ## [0.2.0] - 2026-07-04
 
 Sprint 1 — CLI ergonomics: the project name becomes optional, `new` flows straight into `go`,
