@@ -27,8 +27,17 @@ renames that section. A single off-cycle fix only earns a patch release if it's 
    add a fresh empty `## [Unreleased]` above it, and update the link definitions at the bottom
    (`[Unreleased]` compare range + a new `[X.Y.Z]` link). Commit.
 
-2. **Sanity gate**: `go build ./... && go vet ./... && go test ./...` green on the release commit.
-   Before a minor, point a code review (Claude/Codex) at the diff since the previous tag.
+2. **Sanity gate**: `make check` green on the release commit, and a **Codex/Claude review
+   before any release** (adopted from NamWeb — reviews here have caught release-blockers every
+   time so far). `.codex-review` at the repo root records the last commit covered by a review,
+   so the scope is a one-liner:
+
+   ```bash
+   git diff --stat "$(cat .codex-review)"..main
+   ```
+
+   After addressing findings, update `.codex-review` to the reviewed-and-fixed `main` HEAD and
+   commit it.
 
 3. **Tag and push** (annotated):
 
