@@ -11,6 +11,8 @@ func cfgWithRoleCmds(cmds map[string]string) Config {
 }
 
 func TestStateOfReliableSignals(t *testing.T) {
+	setHostname(t, "testhost")
+	fakeTmux(t, nil) // no capture output: heuristic defaults apply
 	cfg := cfgWithRoleCmds(map[string]string{"coder": "claude"})
 	cases := []struct {
 		name string
@@ -28,6 +30,76 @@ func TestStateOfReliableSignals(t *testing.T) {
 		if got := StateOf(cfg, c.w); got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+func TestClassifyTitle(t *testing.T) {
+	cases := []struct {
+		title string
+		want  State
+	}{
+		{"⠂ testing-foundation-sprint", StateWorking},
+		{"⠐ another frame", StateWorking},
+		{"✳ Review NamWeb UI and …", StateWaiting},
+		{"", ""},
+		{"my dev server", ""},
+	}
+	for _, c := range cases {
+		if got := classifyTitle(c.title); got != c.want {
+			t.Errorf("classifyTitle(%q) = %q, want %q", c.title, got, c.want)
+		}
+	}
+}
+
+func TestClassifyOutput(t *testing.T) {
+	cases := []struct {
+		name, text string
+		want       State
+	}{
+		{"selector cursor", "Do you want to proceed?\n❯ 1. Yes\n  2. No\n", StateWaiting},
+		{"y/n suffix", "Overwrite existing file? [y/n]\n", StateWaiting},
+		{"parenthesised y/n", "continue? (Y/n)\n", StateWaiting},
+		{"plain output", "compiling...\nlinking...\ndone in 3s\n", StateWorking},
+		{"prompt scrolled into history", "❯ 1. Yes\n1\n2\n3\n4\n5\n6\n7\n", StateWorking},
+		{"empty", "", StateWorking},
+	}
+	for _, c := range cases {
+		if got := classifyOutput(c.text); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestStateOfTitleBeatsCapture(t *testing.T) {
+	setHostname(t, "testhost")
+	fakeTmux(t, nil) // capture-pane would fail: must not be consulted
+	cfg := cfgWithRoleCmds(map[string]string{"coder": "claude"})
+	w := Window{Role: "coder", Command: "2.1.200", Title: "✳ idle agent"}
+	if got := StateOf(cfg, w); got != StateWaiting {
+		t.Errorf("got %q, want waiting from title alone", got)
+	}
+	w.Title = "⠂ busy agent"
+	if got := StateOf(cfg, w); got != StateWorking {
+		t.Errorf("got %q, want working from title alone", got)
+	}
+}
+
+func TestStateOfCaptureFallback(t *testing.T) {
+	setHostname(t, "testhost")
+	cfg := cfgWithRoleCmds(map[string]string{"coder": "aider"})
+	// Title is the hostname default → uninformative → capture-pane decides.
+	w := Window{ID: "@1", Role: "coder", Command: "aider", Title: "testhost"}
+	fakeTmux(t, map[string]string{"capture-pane": "Apply changes? (y/n)"})
+	if got := StateOf(cfg, w); got != StateWaiting {
+		t.Errorf("got %q, want waiting from capture", got)
+	}
+	fakeTmux(t, map[string]string{"capture-pane": "thinking..."})
+	if got := StateOf(cfg, w); got != StateWorking {
+		t.Errorf("got %q, want working", got)
+	}
+	fakeTmux(t, nil) // capture fails (e.g. no server): default working
+	if got := StateOf(cfg, w); got != StateWorking {
+		t.Errorf("got %q, want working when capture fails", got)
 	}
 }
 
