@@ -63,10 +63,11 @@ $ foreman list
 Requires `tmux` (`brew install tmux`).
 
 ```
-go build -o foreman ./cmd/foreman
-mv foreman ~/.local/bin/        # or anywhere on PATH
-ln -s ~/.local/bin/foreman ~/.local/bin/fm   # optional short name
+make install                    # foreman + fm symlink + fm-explorer into ~/.local/bin
 ```
+
+(`make help` lists the other targets; `BIN=/somewhere make install` to install
+elsewhere on PATH.)
 
 ## Explorer (menu bar app)
 
@@ -74,9 +75,7 @@ A macOS menu bar companion: glance at every project and participant, click one
 to pull its view into a Terminal window (same move semantics as `go`).
 
 ```
-go build -o fm-explorer ./cmd/foreman-explorer
-mv fm-explorer ~/.local/bin/
-fm-explorer &                   # shows "fm" in the menu bar; Quit from its menu
+fm-explorer &                   # installed by make install; shows "fm" in the menu bar
 ```
 
 The menu refreshes every 10 seconds. Pinned projects show a ★.

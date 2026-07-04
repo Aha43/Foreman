@@ -10,6 +10,10 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Added
 
+- **Makefile.** `make install` builds and installs `foreman` (+ `fm` symlink) and `fm-explorer`
+  into `~/.local/bin` (override with `BIN=`); `make check` is the gofmt+vet+test gate from the
+  workflow docs. Closes #14.
+
 - **The project name can be omitted.** `foreman new coder` (and `go`, `adopt`, `done`,
   `pin`/`unpin`) infers the project: inside a managed terminal, that terminal's project;
   otherwise the configured `root` containing the current directory; otherwise the directory's
