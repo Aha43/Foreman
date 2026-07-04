@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to foreman are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Pre-1.0 (`0.MINOR.PATCH`):
+minor = features (breaking changes allowed), patch = fixes.
+
+## [Unreleased]
+
+## [0.1.0] - 2026-07-04
+
+The MVP: project-organized terminals on top of tmux, plus the macOS menu bar explorer.
+
+### Added
+
+- **The core CLI.** Projects map to tmux sessions, terminals to windows tagged with role
+  metadata: `foreman list`, `foreman <project> new|go|list|adopt|done|pin|unpin`. Identity is
+  loud (per-project colored status-bar badge), lookups go by role + immutable window id, and all
+  state lives in the tmux server — no state files.
+- **`foreman init`** — scaffolds a starter `~/.config/foreman/config.toml` with role presets
+  (e.g. `planner` runs `claude --permission-mode plan`) and project roots.
+- **`go` moves the view instead of adding one** — navigating never multiplies terminals;
+  `--mirror` keeps other views for the side-by-side case.
+- **foreman-explorer** — a macOS menu bar companion: glance at every project and participant,
+  click to pull its view into a Terminal window. Pinned projects show a ★.
+- `foreman list` shows the attached client count per project.
+- Status display prefers the pane title over the process name.
+
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Aha43/Foreman/releases/tag/v0.1.0

@@ -94,6 +94,9 @@ terminals are first-class participants.
 
 ## Roadmap
 
+Tracked as [GitHub issues](https://github.com/Aha43/Foreman/issues), grouped into sprint
+milestones — see [docs/workflow.md](docs/workflow.md). The broad strokes:
+
 - **Observation layer**: notice participant state changes without attaching —
   process finished (reliable, via tmux hooks like `pane-died` / `monitor-silence`)
   and agent-waiting-for-input (heuristic on `capture-pane` output). Surface in
