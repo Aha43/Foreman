@@ -91,6 +91,9 @@ func cmdGo(project, role string, mirror bool) error {
 	if err != nil {
 		return err
 	}
+	// Re-stamp styling on the most-used verb so sessions self-heal — e.g.
+	// the ticker's baked binary path after a moved install (issue #37).
+	core.StyleSession(project)
 	if core.InsideTmux() {
 		if _, err := core.Tmux("switch-client", "-t", w.ID); err != nil {
 			return err
@@ -205,6 +208,7 @@ func cmdPin(project string, on bool) error {
 	if _, err := core.Tmux("set-option", "-t", core.SessionName(project), "@fm_priority", val); err != nil {
 		return err
 	}
+	core.StyleSession(project)
 	if on {
 		fmt.Printf("pinned %s\n", project)
 	} else {
