@@ -13,6 +13,13 @@ minor = features (breaking changes allowed), patch = fixes.
 - **CI.** A GitHub Actions `check` workflow runs `make check` (gofmt + vet + test) on every PR
   and push to `main` — the automated version of the workflow doc's PR gate. Closes #21.
 
+- **Tests for `internal/core`.** Table-driven tests for project inference (`projectByRoot`,
+  `CurrentProject` — all three sources), config parsing, `WorkDir` precedence, window/status
+  parsing and `FindWindow`'s role-beats-name rule, `ListProjects` sorting/filtering, `HumanAge`,
+  and `WindowStatus`. Tmux-facing code is tested through a new seam (`tmuxRun`) that feeds
+  canned tmux output — the same seam the observation layer will build on. `make check` has
+  teeth now. Closes #20.
+
 ## [0.2.0] - 2026-07-04
 
 Sprint 1 — CLI ergonomics: the project name becomes optional, `new` flows straight into `go`,

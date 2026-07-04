@@ -11,9 +11,15 @@ import (
 	"syscall"
 )
 
+// tmuxRun executes the tmux binary; a seam so tests can substitute canned
+// output (issue #20).
+var tmuxRun = func(args ...string) ([]byte, error) {
+	return exec.Command("tmux", args...).CombinedOutput()
+}
+
 // Tmux runs a tmux command and returns trimmed stdout.
 func Tmux(args ...string) (string, error) {
-	out, err := exec.Command("tmux", args...).CombinedOutput()
+	out, err := tmuxRun(args...)
 	s := strings.TrimSpace(string(out))
 	if err != nil {
 		if s != "" {
