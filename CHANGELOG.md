@@ -28,6 +28,12 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **One classifier for all observation surfaces.** The ticker used a cheaper title-only check,
+  so a titleless agent at a y/n prompt could show `waiting⚠` in `foreman list` and trigger a
+  notification while missing from the ticker. All three surfaces now share the full classifier —
+  the capture fallback only ever runs for titleless agent windows, which are rare. Found by
+  Codex review. Closes #38.
+
 - **The ticker survives the binary moving.** The status-bar command now prefers the
   PATH-resolved `foreman` over the running executable's path (which can be a `go run` temp dir
   or scratch build), and session styling is re-stamped on `go` and `pin` — so existing sessions

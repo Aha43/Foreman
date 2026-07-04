@@ -17,15 +17,11 @@ const (
 // StateOf observes one participant. The reliable signals: a dead pane, and
 // "dropped back to the shell" — role commands run inside the shell, so the
 // current command being a shell means the role's process ended (done) or the
-// terminal never ran one (shell).
+// terminal never ran one (shell). There is exactly one classifier — list,
+// ticker, and notifications must never disagree about who is waiting
+// (issue #38); the capture fallback only fires for titleless agent windows,
+// which are rare, so it's cheap enough for every caller.
 func StateOf(cfg Config, w Window) State {
-	return stateOf(cfg, w, true)
-}
-
-// stateOf with peek=false skips the capture-pane fallback — for callers on a
-// tight schedule like the status-bar ticker, where a per-window subprocess
-// every redraw isn't worth the marginal accuracy.
-func stateOf(cfg Config, w Window, peek bool) State {
 	if w.Dead {
 		return StateExited
 	}
@@ -43,11 +39,9 @@ func stateOf(cfg Config, w Window, peek bool) State {
 	// Title uninformative: peek at the pane's bottom lines. Content matching
 	// self-pollutes easily (output *mentioning* a prompt looks like one), so
 	// the pattern set stays small and the default is working.
-	if peek {
-		if out, err := Tmux("capture-pane", "-p", "-t", w.ID); err == nil {
-			if classifyOutput(out) == StateWaiting {
-				return StateWaiting
-			}
+	if out, err := Tmux("capture-pane", "-p", "-t", w.ID); err == nil {
+		if classifyOutput(out) == StateWaiting {
+			return StateWaiting
 		}
 	}
 	return StateWorking
@@ -81,7 +75,7 @@ func TickerLine(cfg Config, projects []Project, current string) string {
 		}
 		var roles []string
 		for _, w := range p.Windows {
-			if stateOf(cfg, w, false) == StateWaiting {
+			if StateOf(cfg, w) == StateWaiting {
 				roles = append(roles, w.RoleName()+"⚠")
 			}
 		}
