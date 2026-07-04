@@ -53,8 +53,11 @@ func TestCloseTermWindow(t *testing.T) {
 		return "", true
 	}, "")
 	CloseTermWindow("/dev/ttys042")
-	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " 77") {
-		t.Errorf("osascript calls = %v, want one close ending in the id", *osaCalls)
+	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " /dev/ttys042") {
+		t.Errorf("osascript calls = %v, want one tab-close keyed by tty", *osaCalls)
+	}
+	if strings.Contains((*osaCalls)[0], "close (every window") {
+		t.Errorf("must close the tab, never the whole window: %v", *osaCalls)
 	}
 	if got := (*tmuxCalls)[len(*tmuxCalls)-1]; got != "set-option -s -u @fm_win_ttys042" {
 		t.Errorf("last tmux call = %q, want the unset", got)
@@ -85,8 +88,8 @@ func TestSweepClosesOnlyOrphans(t *testing.T) {
 		return "", true
 	}, "")
 	SweepTermWindows()
-	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " 77") {
-		t.Errorf("want exactly the orphan (77) closed, got %v", *osaCalls)
+	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " /dev/ttys012") {
+		t.Errorf("want exactly the orphan (ttys012) closed, got %v", *osaCalls)
 	}
 	joined := strings.Join(*tmuxCalls, ";")
 	if !strings.Contains(joined, "set-option -s -u @fm_win_ttys012") {

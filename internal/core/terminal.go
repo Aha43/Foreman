@@ -55,8 +55,11 @@ func recordTermWindow(tty, windowID string) {
 	Tmux("set-option", "-s", termWinKey(tty), windowID)
 }
 
-// CloseTermWindow closes the tracked Terminal window of one client tty, if
+// CloseTermWindow closes the tracked Terminal view of one client tty, if
 // any, and forgets it. Unknown ttys are a no-op — that's a user's own window.
+// Only the foreman *tab* is closed, identified by its tty — the user may
+// have added tabs of their own to the window (issue #47); Terminal closes
+// the window itself when the last tab goes.
 func CloseTermWindow(tty string) {
 	key := termWinKey(tty)
 	id, err := Tmux("show-options", "-s", "-q", "-v", key)
@@ -65,8 +68,14 @@ func CloseTermWindow(tty string) {
 	}
 	runOsascript(
 		"-e", "on run argv",
-		"-e", `tell application "Terminal" to close (every window whose id is (item 1 of argv as integer))`,
-		"-e", "end run", id)
+		"-e", `tell application "Terminal"`,
+		"-e", "repeat with w in windows",
+		"-e", "try",
+		"-e", "close (first tab of w whose tty is (item 1 of argv))",
+		"-e", "end try",
+		"-e", "end repeat",
+		"-e", "end tell",
+		"-e", "end run", tty)
 	Tmux("set-option", "-s", "-u", key)
 }
 
