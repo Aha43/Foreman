@@ -93,6 +93,9 @@ const ConfigTemplate = `# foreman config — role presets and project settings.
 [role.planner]
 cmd = "claude --permission-mode plan"
 
+[role.coder]
+cmd = "claude"
+
 [role.agent]
 cmd = "claude"
 

@@ -10,6 +10,12 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **`new coder` no longer looks broken.** The docs use `coder` as the canonical role, but the
+  shipped config template only defined `planner` and `agent` — so following the README opened a
+  plain shell with no claude, silently. The template now ships `[role.coder]`, and `new` prints
+  a notice when the role isn't configured at all instead of leaving the shell unexplained
+  (a role deliberately configured without a `cmd` stays quiet).
+
 - **Window cleanup actually closes windows.** The 0.5.0 lifecycle tracked windows by tty, but
   macOS recycles a pty the instant its shell exits and dead tabs keep reporting their stale
   tty — so tracking entries got overwritten (husks forgotten forever) and a recycled tty could
