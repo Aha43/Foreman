@@ -10,6 +10,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **A hung Terminal can't freeze foreman.** All Terminal automation now runs under a 15-second
+  timeout — a stuck AppleEvent no longer blocks `go`, `done`'s cleanup worker, or the explorer's
+  poll forever; timeouts count as errors, so tracking survives for the sweep to retry. Found by
+  Codex review. Closes #62.
+
 - **Opening a window that can't be tracked is now an error.** A Terminal reply that didn't
   parse silently skipped tracking, and a failed tmux write was ignored — `go --window` and
   explorer clicks reported success for windows cleanup could never find. The reply is now

@@ -1,11 +1,13 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // macOS Terminal.app integration: foreman opens windows for views, tracks
@@ -18,9 +20,18 @@ import (
 // client. Only windows foreman opened are tracked, so user-opened windows
 // are never touched.
 
-// runOsascript executes osascript; a seam so tests can fake it, like tmuxRun.
+// runOsascript executes osascript; a seam so tests can fake it, like
+// tmuxRun. Bounded: a hung Terminal.app or stuck AppleEvent must not block
+// go, done's worker, or the explorer rebuild forever (issue #62) — the cap
+// comfortably clears closeTracked's internal ~2s busy grace. A timeout is
+// an error, so tracking entries are preserved for the sweep to retry.
 var runOsascript = func(args ...string) (string, error) {
-	out, err := exec.Command("osascript", args...).CombinedOutput()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "osascript", args...).CombinedOutput()
+	if ctx.Err() != nil {
+		return "", fmt.Errorf("osascript timed out: %w", ctx.Err())
+	}
 	return strings.TrimSpace(string(out)), err
 }
 
