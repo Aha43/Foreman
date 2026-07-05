@@ -10,6 +10,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **A slow terminal teardown can't strand a husk anymore.** The window-close script reports
+  what it did (`closed`/`gone`/`notab`/`kepttab`/`busy`), but the caller forgot the tracking
+  entry on any clean exit — so a tab still busy after the grace period (possibly a tmux
+  teardown just slower than 2s) became a permanently forgotten husk. `busy` now keeps the
+  entry for the sweep to re-judge; only genuinely terminal outcomes forget it. Found by Codex
+  review. Closes #59.
+
 - **`new coder` no longer looks broken.** The docs use `coder` as the canonical role, but the
   shipped config template only defined `planner` and `agent` — so following the README opened a
   plain shell with no claude, silently. The template now ships `[role.coder]`, and `new` prints

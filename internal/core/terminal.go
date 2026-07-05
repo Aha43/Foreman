@@ -104,22 +104,27 @@ func CloseTermWindow(tty string) {
 }
 
 // closeTracked closes the tty's tab inside one tracked window and forgets
-// the tracking. The window already being gone, or the tab no longer being
-// identifiable, count as done. A busy tab is waited out for ~2s — right
-// after detach-client the tmux process is still exiting — and if it stays
-// busy the user started something of their own there: the tab is left open
-// (never terminate a user's process, never trigger Terminal's confirmation
-// sheet) but still forgotten, since it's not a husk. When our tab is the
-// window's only one — the normal case, foreman opens fresh windows — the
-// *window* is closed: Terminal 2.15 rejects `close` on tab objects with
-// -1708, which is how husks piled up silently before (issue #56). The
-// tab-close is still attempted for windows the user added tabs to (issue
-// #47); where Terminal can't do it, the tab is left to the user rather
-// than retried forever. Only a failed osascript run (Terminal unreachable,
-// automation denied) keeps the entry, so a later sweep retries instead of
-// stranding a husk.
+// the tracking when there is nothing left to manage. The script's return
+// value is a protocol, and each word decides the entry's fate (issue #59):
+//
+//   - "closed", "gone", "notab" — done, forget the entry.
+//   - "kepttab" — the user added tabs and this Terminal can't close a tab
+//     object; the tab is left to the user rather than retried forever.
+//     Forgotten, explicitly.
+//   - "busy" — the tab still runs something after the ~2s grace. That's
+//     either a tmux teardown slower than the grace (still a husk!) or a
+//     user's own process — we can't tell yet, so the entry is KEPT and the
+//     sweep re-judges it next cycle instead of stranding a husk.
+//
+// A busy tab is waited out for ~2s first — right after detach-client the
+// tmux process is still exiting. When our tab is the window's only one —
+// the normal case, foreman opens fresh windows — the *window* is closed:
+// some Terminal builds reject `close` on tab objects with -1708, which is
+// how husks piled up silently before (issue #56). A failed osascript run
+// (Terminal unreachable, automation denied, timeout) also keeps the entry
+// for retry.
 func closeTracked(windowID, ttyBase string) {
-	_, err := runOsascript(
+	out, err := runOsascript(
 		"-e", "on run argv",
 		"-e", `tell application "Terminal"`,
 		"-e", "set wid to (item 1 of argv) as integer",
@@ -146,8 +151,8 @@ func closeTracked(windowID, ttyBase string) {
 		"-e", "end tell",
 		"-e", `return "closed"`,
 		"-e", "end run", windowID, "/dev/"+ttyBase)
-	if err != nil {
-		return
+	if err != nil || out == "busy" {
+		return // keep the entry: the sweep retries / re-judges
 	}
 	Tmux("set-option", "-s", "-u", termWinKey(windowID))
 }
