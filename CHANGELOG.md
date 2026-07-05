@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-05
+
+The cross-machine hardening release: an Intel-Mac install surfaced two real-world bugs
+(pty-recycled window tracking, the missing `coder` template role) fixed there and
+counter-verified here, then a Codex review of that work found four more lifecycle holes —
+all closed before this cut. Window cleanup is now id-keyed, race-checked, protocol-aware,
+and time-bounded.
+
 ### Fixed
 
 - **A hung Terminal can't freeze foreman.** All Terminal automation now runs under a 15-second
@@ -223,7 +231,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Aha43/Foreman/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Aha43/Foreman/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Aha43/Foreman/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Aha43/Foreman/compare/v0.2.0...v0.3.0
