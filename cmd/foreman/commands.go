@@ -58,7 +58,9 @@ func cmdNew(project, role string) error {
 		}
 	}
 	fmt.Printf("created %s/%s in %s\n", project, role, dir)
-	if cfg.Roles[role].Cmd == "" {
+	// Only unknown roles get the notice — a role deliberately configured
+	// without a cmd (a named plain shell) already explained itself.
+	if _, known := cfg.Roles[role]; !known {
 		fmt.Printf("note: role %q has no cmd in %s — opened a plain shell\n", role, core.ConfigPath())
 	}
 	// The typical next step is go, so offer it. Only on a TTY — scripted
