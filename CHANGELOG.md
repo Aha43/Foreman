@@ -8,6 +8,19 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Window cleanup actually closes windows.** The 0.5.0 lifecycle tracked windows by tty, but
+  macOS recycles a pty the instant its shell exits and dead tabs keep reporting their stale
+  tty — so tracking entries got overwritten (husks forgotten forever) and a recycled tty could
+  match tabs in the wrong window. Worse, Terminal 2.15 rejects `close` on tab objects outright,
+  an error the old code swallowed while forgetting the window anyway — on Macs with that
+  Terminal, *no* window ever closed. Tracking is now keyed by Terminal's window id (unique,
+  never reused) with the tty as the liveness value; single-tab windows are closed as windows;
+  a close that fails is retried by the sweep instead of forgotten; a tab that stays busy is
+  left to its user (never a confirmation sheet), and old-format tracking entries migrate on
+  the first sweep. Closes #56.
+
 ## [0.5.0] - 2026-07-04
 
 Terminal window lifecycle: foreman now closes the windows it opens once their view moves away —
