@@ -71,6 +71,19 @@ func trackedWindows() map[string]string {
 	return m
 }
 
+// trackedValue re-reads one entry fresh. Mutations verify against this
+// right before writing: record (a CLI process) and the sweep (the explorer)
+// race over the same options with no cross-process lock, and acting on a
+// stale snapshot can resurrect an entry the other side just retired
+// (issue #60). The residual window shrinks from seconds to milliseconds.
+func trackedValue(windowID string) string {
+	out, err := Tmux("show-options", "-s", "-q", "-v", termWinKey(windowID))
+	if err != nil {
+		return ""
+	}
+	return strings.Trim(out, `"`)
+}
+
 func recordTermWindow(tty, windowID string) {
 	if tty == "" || windowID == "" {
 		return
@@ -81,9 +94,14 @@ func recordTermWindow(tty, windowID string) {
 	// Close it here — left tracked, the recycled tty's live client would make
 	// the sweep believe the husk is attached, forever (issue #56).
 	for id, val := range trackedWindows() {
-		if id != windowID && strings.TrimSuffix(val, "?") == base {
-			closeTracked(id, base)
+		if id == windowID || strings.TrimSuffix(val, "?") != base {
+			continue
 		}
+		// A concurrent sweep may have judged this entry since the snapshot.
+		if strings.TrimSuffix(trackedValue(id), "?") != base {
+			continue
+		}
+		closeTracked(id, base)
 	}
 	Tmux("set-option", "-s", termWinKey(windowID), base)
 }
@@ -189,6 +207,12 @@ func SweepTermWindows() {
 			if _, err := strconv.Atoi(tty); err == nil {
 				Tmux("set-option", "-s", termWinKey(tty), id)
 			}
+			continue
+		}
+		// Act only if the entry still reads as snapshotted — a concurrent
+		// record may have retired it since; writing anyway would resurrect
+		// a stale option whose recycled tty reads as attached (issue #60).
+		if trackedValue(id) != value {
 			continue
 		}
 		switch {

@@ -10,6 +10,12 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **The window bookkeeping can't resurrect retired entries.** The CLI's record step and the
+  explorer's sweep race over the same tmux options from different processes; a sweep acting on
+  a stale snapshot could re-create an entry the record had just retired — one whose recycled
+  tty then reads as attached forever. Every mutation now verifies against a fresh read first.
+  Found by Codex review. Closes #60.
+
 - **A slow terminal teardown can't strand a husk anymore.** The window-close script reports
   what it did (`closed`/`gone`/`notab`/`kepttab`/`busy`), but the caller forgot the tracking
   entry on any clean exit — so a tab still busy after the grace period (possibly a tmux
