@@ -28,13 +28,22 @@ func recordCalls(t *testing.T, tmuxOut func(args []string) (string, bool), osaOu
 	return &tc, &oc
 }
 
-// trackingFake builds a tmux fake serving one option listing and one
-// attached-clients output — the two queries tracking code makes.
+// trackingFake builds a tmux fake serving one option listing, one
+// attached-clients output, and per-key value reads consistent with the
+// listing (issue #60's verify-before-write reads entries fresh).
 func trackingFake(listing, clients string) func(args []string) (string, bool) {
+	values := map[string]string{}
+	for _, line := range strings.Split(listing, "\n") {
+		if name, v, ok := strings.Cut(line, " "); ok {
+			values[name] = strings.Trim(v, `"`)
+		}
+	}
 	return func(args []string) (string, bool) {
 		switch {
 		case args[0] == "show-options" && len(args) == 2: // the -s listing
 			return listing, true
+		case args[0] == "show-options": // per-key fresh read
+			return values[args[len(args)-1]], true
 		case args[0] == "list-clients":
 			return clients, true
 		}
@@ -185,6 +194,27 @@ func TestSweepAbortsWhenClientQueryFails(t *testing.T) {
 	SweepTermWindows()
 	if len(*osaCalls) != 0 {
 		t.Errorf("uncertain client state must abort the sweep, got %v", *osaCalls)
+	}
+}
+
+func TestSweepSkipsEntryChangedSinceSnapshot(t *testing.T) {
+	// Between the sweep's listing and its write, a concurrent record retired
+	// the entry (fresh read disagrees) — the sweep must not strike/close it,
+	// which would resurrect a stale option (issue #60).
+	base := trackingFake("@fm_win_77 ttys012", "")
+	fake := func(args []string) (string, bool) {
+		if args[0] == "show-options" && len(args) > 2 {
+			return "", true // fresh read: entry already gone
+		}
+		return base(args)
+	}
+	tmuxCalls, osaCalls := recordCalls(t, fake, "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("changed entry must not be acted on, got %v", *osaCalls)
+	}
+	if joined := strings.Join(*tmuxCalls, ";"); strings.Contains(joined, "@fm_win_77 ttys012?") {
+		t.Errorf("stale strike written — resurrection: %s", joined)
 	}
 }
 
