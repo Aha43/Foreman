@@ -10,6 +10,12 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **Opening a window that can't be tracked is now an error.** A Terminal reply that didn't
+  parse silently skipped tracking, and a failed tmux write was ignored — `go --window` and
+  explorer clicks reported success for windows cleanup could never find. The reply is now
+  validated strictly and tracking persistence failures surface to the caller. Found by Codex
+  review. Closes #61.
+
 - **The window bookkeeping can't resurrect retired entries.** The CLI's record step and the
   explorer's sweep race over the same tmux options from different processes; a sweep acting on
   a stale snapshot could re-create an entry the record had just retired — one whose recycled
