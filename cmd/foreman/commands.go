@@ -58,6 +58,9 @@ func cmdNew(project, role string) error {
 		}
 	}
 	fmt.Printf("created %s/%s in %s\n", project, role, dir)
+	if cfg.Roles[role].Cmd == "" {
+		fmt.Printf("note: role %q has no cmd in %s — opened a plain shell\n", role, core.ConfigPath())
+	}
 	// The typical next step is go, so offer it. Only on a TTY — scripted
 	// use creates without going, as before.
 	if stdinIsTTY() {

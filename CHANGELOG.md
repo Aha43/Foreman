@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`new coder` no longer looks broken.** The docs use `coder` as the canonical role, but the
+  shipped config template only defined `planner` and `agent` — so following the README opened a
+  plain shell with no claude, silently. The template now ships `[role.coder]`, and `new` prints
+  a notice when the role has no `cmd` configured instead of leaving the shell unexplained.
+
 ## [0.5.0] - 2026-07-04
 
 Terminal window lifecycle: foreman now closes the windows it opens once their view moves away —
