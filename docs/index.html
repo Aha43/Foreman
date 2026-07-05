@@ -70,10 +70,12 @@
 </header>
 
 <section>
-  <p class="thesis">The real star is the <em>terminal server</em>: tmux keeps your terminals
-  alive in the background — the windows on your screen are just viewers. foreman adds the
-  missing semantics: every terminal is a named <em>participant</em> in a <em>project</em>.
-  Close a window by accident? Nothing happened.</p>
+  <p class="thesis">The real star is the <em>terminal server</em>:
+  <a href="https://github.com/tmux/tmux">tmux</a> keeps your terminals alive in the
+  background — the windows on your screen are just viewers. Close a window by accident?
+  Nothing happened. That idea alone will calm a chaotic terminal life; foreman adds the
+  missing semantics on top: every terminal is a named <em>participant</em> in a
+  <em>project</em>.</p>
 </section>
 
 <section>
@@ -138,10 +140,21 @@ go to coder? [Y/n] <span class="a">⏎</span>          <span class="c"># and you
   the core CLI is portable Go over tmux.</p>
 </section>
 
+<section>
+  <h2>If foreman isn't for you, keep the engine</h2>
+  <p class="lead">foreman is one opinion about what to build on a terminal server — projects,
+  participants, roles. If you hit a bug, or the model just isn't how you think, don't let that
+  put you off the idea underneath: <a href="https://github.com/tmux/tmux">tmux</a> on its own
+  is excellent (named sessions and <code>tmux attach</code> get you surprisingly far), and it's
+  a lovely thing to build your <em>own</em> thin layer on. The server does the heavy lifting
+  either way — foreman is proof of how little you need on top.</p>
+</section>
+
 <footer>
   MIT licensed. Built in the open — <a href="https://github.com/Aha43/Foreman/issues">issues</a>,
   <a href="https://github.com/Aha43/Foreman/blob/main/CHANGELOG.md">changelog</a>,
   <a href="https://github.com/Aha43/Foreman/blob/main/docs/how-it-works.md">how it works</a>.
+  Standing on <a href="https://github.com/tmux/tmux">tmux</a>'s shoulders.
 </footer>
 
 </main>
