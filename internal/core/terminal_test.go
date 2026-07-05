@@ -89,6 +89,30 @@ func TestOpenTerminalPurgesRecycledTty(t *testing.T) {
 	}
 }
 
+func TestOpenTerminalRejectsMalformedReply(t *testing.T) {
+	// A reply that doesn't parse means an untracked window — that's an
+	// error, not a success (issue #61).
+	for _, reply := range []string{"", "onlyoneline", "notatty\n77", "/dev/ttys042\nNaN"} {
+		_, _ = recordCalls(t, trackingFake("", ""), reply)
+		if err := OpenTerminal("'fm' 'A' go 'coder'"); err == nil {
+			t.Errorf("reply %q: want error, got nil", reply)
+		}
+	}
+}
+
+func TestOpenTerminalFailsWhenTrackingNotPersisted(t *testing.T) {
+	fake := func(args []string) (string, bool) {
+		if args[0] == "set-option" {
+			return "", false // persistence fails
+		}
+		return trackingFake("", "")(args)
+	}
+	_, _ = recordCalls(t, fake, "/dev/ttys042\n77")
+	if err := OpenTerminal("'fm' 'A' go 'coder'"); err == nil {
+		t.Error("want error when tracking cannot be persisted")
+	}
+}
+
 func TestCloseTermWindow(t *testing.T) {
 	tmuxCalls, osaCalls := recordCalls(t, trackingFake("@fm_win_77 ttys042", ""), "")
 	CloseTermWindow("/dev/ttys042")

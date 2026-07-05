@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -25,7 +26,9 @@ var runOsascript = func(args ...string) (string, error) {
 
 // OpenTerminal opens a Terminal.app window running shellCmd and records the
 // window against its tty. The command travels as an osascript argument,
-// never interpolated into the script (issue #30).
+// never interpolated into the script (issue #30). An untracked window is a
+// husk-to-be that cleanup can never find, so a reply that doesn't parse or
+// tracking that doesn't persist is an error, not a success (issue #61).
 func OpenTerminal(shellCmd string) error {
 	// Returns "<tty>\n<window id>" for tracking.
 	out, err := runOsascript(
@@ -41,10 +44,18 @@ func OpenTerminal(shellCmd string) error {
 	if err != nil {
 		return err
 	}
-	if lines := strings.Split(out, "\n"); len(lines) >= 2 {
-		recordTermWindow(strings.TrimSpace(lines[0]), strings.TrimSpace(lines[1]))
+	lines := strings.Split(out, "\n")
+	if len(lines) < 2 {
+		return fmt.Errorf("unexpected Terminal reply %q — window opened but not tracked", out)
 	}
-	return nil
+	tty, id := strings.TrimSpace(lines[0]), strings.TrimSpace(lines[1])
+	if !strings.HasPrefix(tty, "/dev/") {
+		return fmt.Errorf("unexpected tty %q — window opened but not tracked", tty)
+	}
+	if _, err := strconv.Atoi(id); err != nil {
+		return fmt.Errorf("unexpected window id %q — window opened but not tracked", id)
+	}
+	return recordTermWindow(tty, id)
 }
 
 // termWinKey maps a Terminal window id to its tracking option name.
@@ -84,9 +95,9 @@ func trackedValue(windowID string) string {
 	return strings.Trim(out, `"`)
 }
 
-func recordTermWindow(tty, windowID string) {
+func recordTermWindow(tty, windowID string) error {
 	if tty == "" || windowID == "" {
-		return
+		return fmt.Errorf("empty tty or window id")
 	}
 	base := filepath.Base(tty)
 	// The new window owns this tty now, so any other entry still claiming it
@@ -103,7 +114,10 @@ func recordTermWindow(tty, windowID string) {
 		}
 		closeTracked(id, base)
 	}
-	Tmux("set-option", "-s", termWinKey(windowID), base)
+	if _, err := Tmux("set-option", "-s", termWinKey(windowID), base); err != nil {
+		return fmt.Errorf("window opened but tracking not persisted: %w", err)
+	}
+	return nil
 }
 
 // CloseTermWindow closes the tracked Terminal view of one client tty, if
