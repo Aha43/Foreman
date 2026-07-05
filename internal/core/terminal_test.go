@@ -102,6 +102,24 @@ func TestCloseTermWindowUntrackedIsNoop(t *testing.T) {
 	}
 }
 
+func TestCloseResultProtocol(t *testing.T) {
+	// The AppleScript's return word decides the entry's fate (issue #59):
+	// busy keeps it (slow teardown may still be a husk — sweep re-judges);
+	// every terminal outcome forgets it.
+	cases := map[string]bool{ // result → entry must be forgotten
+		"closed": true, "gone": true, "notab": true, "kepttab": true,
+		"busy": false,
+	}
+	for result, wantForget := range cases {
+		tmuxCalls, _ := recordCalls(t, trackingFake("@fm_win_77 ttys042", ""), result)
+		CloseTermWindow("/dev/ttys042")
+		gotForget := strings.Contains(strings.Join(*tmuxCalls, ";"), "-u @fm_win_77")
+		if gotForget != wantForget {
+			t.Errorf("result %q: forgotten=%v, want %v", result, gotForget, wantForget)
+		}
+	}
+}
+
 func TestCloseTermWindowFailureKeepsTracking(t *testing.T) {
 	// osascript failing (Terminal unreachable, automation denied) must not
 	// unset the entry — forgetting it would strand the husk forever; kept,
