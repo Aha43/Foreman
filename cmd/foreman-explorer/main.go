@@ -93,6 +93,18 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 	// listener, so selecting the header itself still does nothing.
 	header := systray.AddMenuItem(title, "project actions")
 	buildNewParticipant(cfg, p, header, d)
+	// Pin/unpin is one toggle, labeled by what a click would do — judged
+	// from the project's current @fm_priority (issue #71).
+	pinLabel, pinVerb := "Pin", "pin"
+	if p.Pinned {
+		pinLabel, pinVerb = "Unpin", "unpin"
+	}
+	pin := header.AddSubMenuItem(pinLabel, "pinned projects sort first and post notifications")
+	project, verb := p.Name, pinVerb
+	listen(pin, d, func() {
+		execFm(project, verb)
+		requestRebuild()
+	})
 	for _, w := range p.Windows {
 		st := watch(cfg, p, w)
 		label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
@@ -133,20 +145,28 @@ func buildNewParticipant(cfg core.Config, p core.Project, header *systray.MenuIt
 
 // newParticipant creates the terminal (fm new without a TTY creates without
 // going), then pulls it into a Terminal window — you create a terminal to
-// use it. A failure surfaces as a notification; the menu refreshes either
-// way so it reflects whatever actually happened.
+// use it. The menu refreshes either way so it reflects whatever actually
+// happened.
 func newParticipant(project, role string) {
-	out, err := exec.Command(fmBinary(), project, "new", role).CombinedOutput()
-	if err != nil {
-		msg := strings.TrimSpace(string(out))
-		if msg == "" {
-			msg = err.Error()
-		}
-		notify(msg)
-	} else {
+	if execFm(project, "new", role) {
 		openInTerminal(project, role)
 	}
 	requestRebuild()
+}
+
+// execFm runs an fm verb silently and reports whether it succeeded; a
+// failure surfaces the CLI's own message as a notification.
+func execFm(args ...string) bool {
+	out, err := exec.Command(fmBinary(), args...).CombinedOutput()
+	if err == nil {
+		return true
+	}
+	msg := strings.TrimSpace(string(out))
+	if msg == "" {
+		msg = err.Error()
+	}
+	notify(msg)
+	return false
 }
 
 // listen fires fn on every click of item until this menu generation is torn
