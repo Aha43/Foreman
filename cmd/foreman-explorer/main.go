@@ -70,40 +70,49 @@ func rebuild() {
 		systray.AddMenuItem("no projects", "").Disable()
 	}
 	for _, p := range projects {
-		title := p.Name
-		if p.Pinned {
-			title = "★ " + title
-		}
-		header := systray.AddMenuItem(title, "")
-		header.Disable()
-		for _, w := range p.Windows {
-			st := watch(cfg, p, w)
-			label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
-			item := systray.AddMenuItem(label, "click to open here")
-			go onClick(item, done, p.Name, w.RoleName())
-		}
+		buildProjectMenu(cfg, p, done)
 		systray.AddSeparator()
 	}
 
-	refresh := systray.AddMenuItem("Refresh", "")
-	go func(d chan struct{}) {
+	listen(systray.AddMenuItem("Refresh", ""), done, requestRebuild)
+	listen(systray.AddMenuItem("Quit", ""), done, systray.Quit)
+}
+
+// buildProjectMenu adds one project's block to the menu: a header opening a
+// submenu of actions on the project, then one top-level item per participant
+// — participants stay at the top level so the at-a-glance view and the
+// one-click "pull it here" survive the actions moving in (issue #68).
+func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
+	title := p.Name
+	if p.Pinned {
+		title = "★ " + title
+	}
+	// The header must stay enabled for its submenu to open; it has no click
+	// listener, so selecting the header itself still does nothing.
+	header := systray.AddMenuItem(title, "project actions")
+	header.AddSubMenuItem("no actions yet", "").Disable()
+	for _, w := range p.Windows {
+		st := watch(cfg, p, w)
+		label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
+		item := systray.AddMenuItem(label, "click to open here")
+		project, role := p.Name, w.RoleName()
+		listen(item, d, func() { openInTerminal(project, role) })
+	}
+}
+
+// listen fires fn on every click of item until this menu generation is torn
+// down (d closes), so listener goroutines never outlive their menu.
+func listen(item *systray.MenuItem, d chan struct{}, fn func()) {
+	go func() {
 		for {
 			select {
-			case <-refresh.ClickedCh:
-				requestRebuild()
+			case <-item.ClickedCh:
+				fn()
 			case <-d:
 				return
 			}
 		}
-	}(done)
-	quit := systray.AddMenuItem("Quit", "")
-	go func(d chan struct{}) {
-		select {
-		case <-quit.ClickedCh:
-			systray.Quit()
-		case <-d:
-		}
-	}(done)
+	}()
 }
 
 // watch is the observation epic's memory half (issue #5): compare this
@@ -141,17 +150,6 @@ func notify(msg string) {
 		"-e", "on run argv",
 		"-e", `display notification (item 1 of argv) with title "foreman"`,
 		"-e", "end run", msg).Run()
-}
-
-func onClick(item *systray.MenuItem, d chan struct{}, project, role string) {
-	for {
-		select {
-		case <-item.ClickedCh:
-			openInTerminal(project, role)
-		case <-d:
-			return
-		}
-	}
 }
 
 // openInTerminal opens a tracked Terminal.app window running
