@@ -25,6 +25,11 @@ minor = features (breaking changes allowed), patch = fixes.
   Anything but an explicit Done (cancel, 60-second give-up, error) answers no. Per-participant
   only: whole-project `done` stays a deliberate CLI act. Closes #72.
 
+- **Start a dormant project from the explorer.** Projects configured in config.toml but not
+  running are listed under "start a project"; picking a role creates the first participant
+  and pulls it into a Terminal window — a project exists when its session does, so starting
+  one is just `new` on a project not running yet. Closes #70.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that

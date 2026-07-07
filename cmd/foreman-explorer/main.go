@@ -72,10 +72,13 @@ func rebuild() {
 	if len(projects) == 0 {
 		systray.AddMenuItem("no projects", "").Disable()
 	}
+	live := map[string]bool{}
 	for _, p := range projects {
 		buildProjectMenu(cfg, p, done)
 		systray.AddSeparator()
+		live[p.Name] = true
 	}
+	buildDormant(cfg, live, done)
 
 	listen(systray.AddMenuItem("Refresh", ""), done, requestRebuild)
 	listen(systray.AddMenuItem("Quit", ""), done, systray.Quit)
@@ -132,24 +135,15 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 }
 
 // buildNewParticipant fills the project's actions submenu with "New
-// participant" role entries: every configured role plus shell (unknown roles
-// get a plain shell, so it is always a valid choice). Roles the project
-// already has are shown disabled — new would only refuse them (issue #69).
+// participant" role entries. Roles the project already has are shown
+// disabled — new would only refuse them (issue #69).
 func buildNewParticipant(cfg core.Config, p core.Project, header *systray.MenuItem, d chan struct{}) {
 	menu := header.AddSubMenuItem("New participant", "start a terminal in this project")
-	roles := make([]string, 0, len(cfg.Roles)+1)
-	for r := range cfg.Roles {
-		roles = append(roles, r)
-	}
-	if _, ok := cfg.Roles["shell"]; !ok {
-		roles = append(roles, "shell")
-	}
-	sort.Strings(roles)
 	have := map[string]bool{}
 	for _, w := range p.Windows {
 		have[w.RoleName()] = true
 	}
-	for _, r := range roles {
+	for _, r := range roleChoices(cfg) {
 		item := menu.AddSubMenuItem(r, "")
 		if have[r] {
 			item.Disable()
@@ -158,6 +152,48 @@ func buildNewParticipant(cfg core.Config, p core.Project, header *systray.MenuIt
 		project, role := p.Name, r
 		listen(item, d, func() { newParticipant(project, role) })
 	}
+}
+
+// roleChoices is what a new participant may start as: every configured role
+// plus shell — unknown roles get a plain shell, so it is always valid.
+func roleChoices(cfg core.Config) []string {
+	roles := make([]string, 0, len(cfg.Roles)+1)
+	for r := range cfg.Roles {
+		roles = append(roles, r)
+	}
+	if _, ok := cfg.Roles["shell"]; !ok {
+		roles = append(roles, "shell")
+	}
+	sort.Strings(roles)
+	return roles
+}
+
+// buildDormant lists configured projects with no live session — "create new
+// project" without inventing anything: a project exists when its session
+// does, and starting one is just new on a project not running yet
+// (issue #70). Each dormant project opens the same role choices as "New
+// participant"; the first participant brings the project to life.
+func buildDormant(cfg core.Config, live map[string]bool, d chan struct{}) {
+	var dormant []string
+	for name := range cfg.Projects {
+		if !live[name] {
+			dormant = append(dormant, name)
+		}
+	}
+	if len(dormant) == 0 {
+		return
+	}
+	sort.Strings(dormant)
+	systray.AddMenuItem("start a project", "configured, not running").Disable()
+	for _, name := range dormant {
+		menu := systray.AddMenuItem("   "+name, "start this project")
+		for _, r := range roleChoices(cfg) {
+			item := menu.AddSubMenuItem(r, "")
+			project, role := name, r
+			listen(item, d, func() { newParticipant(project, role) })
+		}
+	}
+	systray.AddSeparator()
 }
 
 // newParticipant creates the terminal (fm new without a TTY creates without
