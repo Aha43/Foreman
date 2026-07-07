@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"fyne.io/systray"
@@ -90,7 +92,7 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 	// The header must stay enabled for its submenu to open; it has no click
 	// listener, so selecting the header itself still does nothing.
 	header := systray.AddMenuItem(title, "project actions")
-	header.AddSubMenuItem("no actions yet", "").Disable()
+	buildNewParticipant(cfg, p, header, d)
 	for _, w := range p.Windows {
 		st := watch(cfg, p, w)
 		label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
@@ -98,6 +100,53 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 		project, role := p.Name, w.RoleName()
 		listen(item, d, func() { openInTerminal(project, role) })
 	}
+}
+
+// buildNewParticipant fills the project's actions submenu with "New
+// participant" role entries: every configured role plus shell (unknown roles
+// get a plain shell, so it is always a valid choice). Roles the project
+// already has are shown disabled — new would only refuse them (issue #69).
+func buildNewParticipant(cfg core.Config, p core.Project, header *systray.MenuItem, d chan struct{}) {
+	menu := header.AddSubMenuItem("New participant", "start a terminal in this project")
+	roles := make([]string, 0, len(cfg.Roles)+1)
+	for r := range cfg.Roles {
+		roles = append(roles, r)
+	}
+	if _, ok := cfg.Roles["shell"]; !ok {
+		roles = append(roles, "shell")
+	}
+	sort.Strings(roles)
+	have := map[string]bool{}
+	for _, w := range p.Windows {
+		have[w.RoleName()] = true
+	}
+	for _, r := range roles {
+		item := menu.AddSubMenuItem(r, "")
+		if have[r] {
+			item.Disable()
+			continue
+		}
+		project, role := p.Name, r
+		listen(item, d, func() { newParticipant(project, role) })
+	}
+}
+
+// newParticipant creates the terminal (fm new without a TTY creates without
+// going), then pulls it into a Terminal window — you create a terminal to
+// use it. A failure surfaces as a notification; the menu refreshes either
+// way so it reflects whatever actually happened.
+func newParticipant(project, role string) {
+	out, err := exec.Command(fmBinary(), project, "new", role).CombinedOutput()
+	if err != nil {
+		msg := strings.TrimSpace(string(out))
+		if msg == "" {
+			msg = err.Error()
+		}
+		notify(msg)
+	} else {
+		openInTerminal(project, role)
+	}
+	requestRebuild()
 }
 
 // listen fires fn on every click of item until this menu generation is torn
@@ -158,14 +207,19 @@ func notify(msg string) {
 // the window again once its view moves away (issue #43). Every shell
 // argument is quoted (issue #30).
 func openInTerminal(project, role string) {
-	fm := "fm"
+	cmd := fmt.Sprintf("%s %s go %s", core.ShellQuote(fmBinary()), core.ShellQuote(project), core.ShellQuote(role))
+	core.OpenTerminal(cmd)
+}
+
+// fmBinary locates the fm CLI: the sibling binary next to this executable
+// (how make install lays them out), else whatever PATH resolves.
+func fmBinary() string {
 	if exe, err := os.Executable(); err == nil {
 		if sibling := filepath.Join(filepath.Dir(exe), "fm"); exists(sibling) {
-			fm = sibling
+			return sibling
 		}
 	}
-	cmd := fmt.Sprintf("%s %s go %s", core.ShellQuote(fm), core.ShellQuote(project), core.ShellQuote(role))
-	core.OpenTerminal(cmd)
+	return "fm"
 }
 
 func exists(p string) bool {
