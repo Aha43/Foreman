@@ -30,6 +30,16 @@ minor = features (breaking changes allowed), patch = fixes.
   and pulls it into a Terminal window — a project exists when its session does, so starting
   one is just `new` on a project not running yet. Closes #70.
 
+### Fixed
+
+- **The explorer menu no longer closes itself while you navigate it.** The 10-second poll
+  rebuilt the entire menu every tick, slamming an open menu shut under the cursor — barely
+  noticeable on the old flat menu, unusable with submenus. The menu is now torn down only
+  when its shape changes (projects or participants appear/disappear, pins flip, config
+  changes); label-only changes update the existing items in place, which macOS renders live
+  without closing anything. Observation (state memory, waiting-notifications) still runs
+  every tick regardless. Closes #79.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that

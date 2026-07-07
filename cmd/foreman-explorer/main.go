@@ -25,18 +25,18 @@ func main() {
 func onReady() {
 	systray.SetTitle("fm")
 	systray.SetTooltip("foreman — terminals by project")
-	// All rebuilds happen on this one goroutine — the timer and manual
+	// All menu work happens on this one goroutine — the timer and manual
 	// Refresh both feed it, so the done channel and the systray menu are
 	// never touched concurrently (issue #31).
 	go func() {
-		rebuild()
+		refresh()
 		tick := time.Tick(10 * time.Second)
 		for {
 			select {
 			case <-tick:
 			case <-rebuildReq:
 			}
-			rebuild()
+			refresh()
 		}
 	}()
 }
@@ -52,33 +52,90 @@ func requestRebuild() {
 	}
 }
 
-// done is closed on every rebuild so click-listener goroutines from the
-// previous menu generation exit instead of leaking. Only the rebuilder
-// goroutine touches it.
+// done is closed on every menu rebuild so click-listener goroutines from the
+// previous menu generation exit instead of leaking. lastShape fingerprints
+// the structure last built; participantItems are the live handles for
+// in-place label updates between rebuilds (keyed by tmux window id). Only
+// the refresher goroutine touches any of them.
 var done chan struct{}
+var lastShape = "\x00never built"
+var participantItems map[string]*systray.MenuItem
 
-func rebuild() {
-	if done != nil {
-		close(done)
-	}
-	done = make(chan struct{})
-	systray.ResetMenu()
-
+// refresh is one tick: sweep, observe every participant (the notification
+// pass), then render. The menu is torn down and rebuilt only when its shape
+// — the set of projects, participants, pins, dormants — changed; label-only
+// changes (an agent flipping between working and waiting, status text)
+// update the existing items in place, so an open menu is never yanked shut
+// under the user's cursor (issue #79). Action clicks change the shape, and
+// the click already closed the menu — their refresh still rebuilds.
+func refresh() {
 	// Collect windows whose client ended without passing through go/done.
 	core.SweepTermWindows()
 
 	cfg := core.LoadConfig()
 	projects, _ := core.ListProjects()
+	labels := observe(cfg, projects)
+	if shape := menuShape(cfg, projects); shape != lastShape {
+		lastShape = shape
+		rebuildMenu(cfg, projects, labels)
+		return
+	}
+	for id, item := range participantItems {
+		if label, ok := labels[id]; ok {
+			item.SetTitle(label)
+		}
+	}
+}
+
+// observe runs the watch pass over every participant — state memory and
+// waiting-notifications happen every tick no matter how the menu renders —
+// and returns each window's fresh display label, keyed by window id.
+func observe(cfg core.Config, projects []core.Project) map[string]string {
+	labels := map[string]string{}
+	for _, p := range projects {
+		for _, w := range p.Windows {
+			st := watch(cfg, p, w)
+			labels[w.ID] = fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
+		}
+	}
+	return labels
+}
+
+// menuShape fingerprints everything whose change requires re-adding menu
+// items — systray can retitle items in place, but not change membership:
+// the projects (order and pin state), their participants (id and role),
+// and the config-derived entries (role choices, dormant projects).
+func menuShape(cfg core.Config, projects []core.Project) string {
+	var b strings.Builder
+	for _, p := range projects {
+		fmt.Fprintf(&b, "%s|%v", p.Name, p.Pinned)
+		for _, w := range p.Windows {
+			fmt.Fprintf(&b, ";%s=%s", w.ID, w.RoleName())
+		}
+		b.WriteByte('\n')
+	}
+	b.WriteString(strings.Join(roleChoices(cfg), ","))
+	b.WriteByte('\n')
+	b.WriteString(strings.Join(dormantNames(cfg, projects), ","))
+	return b.String()
+}
+
+func rebuildMenu(cfg core.Config, projects []core.Project, labels map[string]string) {
+	if done != nil {
+		close(done)
+	}
+	done = make(chan struct{})
+	systray.ResetMenu()
+	participantItems = map[string]*systray.MenuItem{}
+
 	if len(projects) == 0 {
 		systray.AddMenuItem("no projects", "").Disable()
 	}
-	live := map[string]bool{}
 	for _, p := range projects {
-		buildProjectMenu(cfg, p, done)
+		buildProjectMenu(cfg, p, labels, done)
 		systray.AddSeparator()
-		live[p.Name] = true
 	}
-	buildDormant(cfg, live, done)
+	buildDormant(cfg, projects, done)
 
 	listen(systray.AddMenuItem("Refresh", ""), done, requestRebuild)
 	listen(systray.AddMenuItem("Quit", ""), done, systray.Quit)
@@ -88,7 +145,7 @@ func rebuild() {
 // submenu of actions on the project, then one top-level item per participant
 // — participants stay at the top level so the at-a-glance view and the
 // one-click "pull it here" survive the actions moving in (issue #68).
-func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
+func buildProjectMenu(cfg core.Config, p core.Project, labels map[string]string, d chan struct{}) {
 	title := p.Name
 	if p.Pinned {
 		title = "★ " + title
@@ -126,9 +183,8 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 		})
 	}
 	for _, w := range p.Windows {
-		st := watch(cfg, p, w)
-		label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
-		item := systray.AddMenuItem(label, "click to open here")
+		item := systray.AddMenuItem(labels[w.ID], "click to open here")
+		participantItems[w.ID] = item
 		project, role := p.Name, w.RoleName()
 		listen(item, d, func() { openInTerminal(project, role) })
 	}
@@ -173,17 +229,11 @@ func roleChoices(cfg core.Config) []string {
 // does, and starting one is just new on a project not running yet
 // (issue #70). Each dormant project opens the same role choices as "New
 // participant"; the first participant brings the project to life.
-func buildDormant(cfg core.Config, live map[string]bool, d chan struct{}) {
-	var dormant []string
-	for name := range cfg.Projects {
-		if !live[name] {
-			dormant = append(dormant, name)
-		}
-	}
+func buildDormant(cfg core.Config, projects []core.Project, d chan struct{}) {
+	dormant := dormantNames(cfg, projects)
 	if len(dormant) == 0 {
 		return
 	}
-	sort.Strings(dormant)
 	systray.AddMenuItem("start a project", "configured, not running").Disable()
 	for _, name := range dormant {
 		menu := systray.AddMenuItem("   "+name, "start this project")
@@ -194,6 +244,22 @@ func buildDormant(cfg core.Config, live map[string]bool, d chan struct{}) {
 		}
 	}
 	systray.AddSeparator()
+}
+
+// dormantNames is the configured projects with no live session, sorted.
+func dormantNames(cfg core.Config, projects []core.Project) []string {
+	live := map[string]bool{}
+	for _, p := range projects {
+		live[p.Name] = true
+	}
+	var dormant []string
+	for name := range cfg.Projects {
+		if !live[name] {
+			dormant = append(dormant, name)
+		}
+	}
+	sort.Strings(dormant)
+	return dormant
 }
 
 // newParticipant creates the terminal (fm new without a TTY creates without
@@ -241,7 +307,7 @@ func listen(item *systray.MenuItem, d chan struct{}, fn func()) {
 // look with the last one (stored as a tmux window option), record the new
 // state, and notify on a transition into waiting — pinned projects only,
 // everything else stays glanceable in this menu. Runs on the single
-// rebuilder goroutine, every 10s poll.
+// refresher goroutine, every 10s poll.
 func watch(cfg core.Config, p core.Project, w core.Window) core.State {
 	st := core.StateOf(cfg, w)
 	last := core.LastState(w)
