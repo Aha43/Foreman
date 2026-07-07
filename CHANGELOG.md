@@ -19,6 +19,12 @@ minor = features (breaking changes allowed), patch = fixes.
   one item, labeled by what a click would do — over the CLI's `pin`/`unpin` verbs. The ★
   and sort order update immediately instead of waiting out the 10-second poll. Closes #71.
 
+- **Done from the explorer, behind a confirmation.** Each project's submenu lists
+  "Done <role>…" per participant; a caution dialog stands between click and teardown —
+  "closing is harmless, ending is explicit", and a misclick must never kill a participant.
+  Anything but an explicit Done (cancel, 60-second give-up, error) answers no. Per-participant
+  only: whole-project `done` stays a deliberate CLI act. Closes #72.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that

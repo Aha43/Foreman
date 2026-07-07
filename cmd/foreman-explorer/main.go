@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -105,6 +106,22 @@ func buildProjectMenu(cfg core.Config, p core.Project, d chan struct{}) {
 		execFm(project, verb)
 		requestRebuild()
 	})
+	// Done entries sit behind the header submenu and a confirmation dialog —
+	// two steps from the top-level go-click, on purpose (issue #72). The
+	// ellipsis is the macOS "asks before acting" convention.
+	if len(p.Windows) > 0 {
+		header.AddSeparator()
+	}
+	for _, w := range p.Windows {
+		item := header.AddSubMenuItem("Done "+w.RoleName()+"…", "end this participant — closes its terminal for real")
+		project, role := p.Name, w.RoleName()
+		listen(item, d, func() {
+			if confirmDone(project, role) {
+				execFm(project, "done", role)
+				requestRebuild()
+			}
+		})
+	}
 	for _, w := range p.Windows {
 		st := watch(cfg, p, w)
 		label := fmt.Sprintf("   %s%s — %s", w.RoleName(), stateMark(st), core.WindowStatus(w))
@@ -210,6 +227,24 @@ func stateMark(s core.State) string {
 		return "○"
 	}
 	return ""
+}
+
+// confirmDone asks before teardown — "closing is harmless, ending is
+// explicit": a menu misclick must never kill a participant (issue #72).
+// The message travels as an osascript argument (#30 rule). Bounded like all
+// automation (#62) but on a human scale: the dialog gives itself up after
+// 60s (with a Go-side backstop), and anything but an explicit Done — cancel,
+// give-up, timeout, error — answers no.
+func confirmDone(project, role string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+	defer cancel()
+	err := exec.CommandContext(ctx, "osascript",
+		"-e", "on run argv",
+		"-e", `set r to display dialog (item 1 of argv) with title "foreman" buttons {"Cancel", "Done"} default button "Cancel" cancel button "Cancel" with icon caution giving up after 60`,
+		"-e", `if gave up of r then error number -128`,
+		"-e", "end run",
+		fmt.Sprintf("End %s in project %s? Its terminal closes for real.", role, project)).Run()
+	return err == nil
 }
 
 // notify posts a macOS notification; the message travels as an osascript
