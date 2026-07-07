@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **New participants from the explorer.** Each project's submenu gains "New participant"
+  listing the configured roles plus `shell`; clicking one creates the terminal and pulls it
+  into a Terminal window, same as clicking a participant. Roles the project already has are
+  shown disabled. Failures surface as a notification. Closes #69.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that
