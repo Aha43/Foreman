@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Changed
+
+- **Explorer project headers are now submenus.** Each project's header opens a submenu that
+  will host the Sprint 6 actions (new participant, pin/unpin, done); until those land it
+  holds a placeholder. Participants stay top-level items — the at-a-glance view and the
+  one-click "pull it here" are unchanged. Closes #68.
+
 ## [0.5.1] - 2026-07-05
 
 The cross-machine hardening release: an Intel-Mac install surfaced two real-world bugs
