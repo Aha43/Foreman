@@ -15,6 +15,10 @@ minor = features (breaking changes allowed), patch = fixes.
   into a Terminal window, same as clicking a participant. Roles the project already has are
   shown disabled. Failures surface as a notification. Closes #69.
 
+- **Pin and unpin from the explorer.** Each project's submenu gains a Pin/Unpin toggle —
+  one item, labeled by what a click would do — over the CLI's `pin`/`unpin` verbs. The ★
+  and sort order update immediately instead of waiting out the 10-second poll. Closes #71.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that
