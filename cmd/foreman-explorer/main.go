@@ -6,9 +6,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +21,48 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		runCommand(os.Args[1])
+		return
+	}
+	setupCrashLog()
 	systray.Run(onReady, nil)
+}
+
+// runCommand handles the non-menu invocations — the launchd agent lifecycle
+// (issue #80). Bare `fm-explorer` still just runs the menu.
+func runCommand(cmd string) {
+	switch cmd {
+	case "install-agent":
+		fail(installAgent())
+		fmt.Println("foreman explorer installed as a login agent — running now, and on every login.")
+		fmt.Printf("logs: %s\n", logPath())
+	case "uninstall-agent":
+		fail(uninstallAgent())
+		fmt.Println("foreman explorer login agent removed.")
+	default:
+		fmt.Fprintf(os.Stderr, "unknown command %q — use install-agent or uninstall-agent\n", cmd)
+		os.Exit(1)
+	}
+}
+
+func fail(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+// setupCrashLog points the standard logger at the explorer's log file, so a
+// panic (below) leaves evidence instead of a silent vanish (issue #80). A
+// log we can't open is not fatal — the menu still matters more.
+func setupCrashLog() {
+	os.MkdirAll(stateDir(), 0o755)
+	f, err := os.OpenFile(logPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return
+	}
+	log.SetOutput(f)
 }
 
 func onReady() {
@@ -27,8 +70,16 @@ func onReady() {
 	systray.SetTooltip("foreman — terminals by project")
 	// All menu work happens on this one goroutine — the timer and manual
 	// Refresh both feed it, so the done channel and the systray menu are
-	// never touched concurrently (issue #31).
+	// never touched concurrently (issue #31). A panic here would silently
+	// drop the menu bar icon; log it and exit non-zero so the evidence is
+	// on disk and a launchd agent (issue #80) restarts us.
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("explorer refresher panic: %v\n%s", r, debug.Stack())
+				os.Exit(1)
+			}
+		}()
 		refresh()
 		tick := time.Tick(10 * time.Second)
 		for {
@@ -295,12 +346,23 @@ func listen(item *systray.MenuItem, d chan struct{}, fn func()) {
 		for {
 			select {
 			case <-item.ClickedCh:
-				fn()
+				safely(fn)
 			case <-d:
 				return
 			}
 		}
 	}()
+}
+
+// safely runs a click handler so a panic in one action is logged and
+// contained — it can't take the whole menu bar app down with it (issue #80).
+func safely(fn func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("explorer action panic: %v\n%s", r, debug.Stack())
+		}
+	}()
+	fn()
 }
 
 // watch is the observation epic's memory half (issue #5): compare this

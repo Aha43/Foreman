@@ -32,6 +32,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Fixed
 
+- **The explorer can survive its launch terminal, and leaves evidence when it dies.**
+  `fm-explorer install-agent` registers a macOS LaunchAgent that starts the explorer at login
+  and relaunches it if it crashes (but not on a deliberate Quit) — so it no longer vanishes
+  when the terminal it was launched from closes; `uninstall-agent` removes it. Either way,
+  panics are now logged to `~/.local/state/foreman/explorer.log` instead of a silent
+  disappearance, and a panic in one menu action is contained rather than taking down the whole
+  app. Closes #80.
+
 - **The explorer menu no longer closes itself while you navigate it.** The 10-second poll
   rebuilt the entire menu every tick, slamming an open menu shut under the cursor — barely
   noticeable on the old flat menu, unusable with submenus. The menu is now torn down only
