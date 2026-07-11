@@ -23,9 +23,10 @@ renames that section. A single off-cycle fix only earns a patch release if it's 
 
 ## Cutting a release
 
-1. **Update `CHANGELOG.md`** on `main`: rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`,
-   add a fresh empty `## [Unreleased]` above it, and update the link definitions at the bottom
-   (`[Unreleased]` compare range + a new `[X.Y.Z]` link). Commit.
+1. **Update `CHANGELOG.md`**: rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, add a fresh
+   empty `## [Unreleased]` above it, and update the link definitions at the bottom
+   (`[Unreleased]` compare range + a new `[X.Y.Z]` link). `main` is branch-protected, so this
+   rides in on a short release PR through the `check` gate rather than a direct push.
 
 2. **Sanity gate**: `make check` green on the release commit, and a **Codex/Claude review
    before any release** (adopted from NamWeb — reviews here have caught release-blockers every
@@ -39,11 +40,12 @@ renames that section. A single off-cycle fix only earns a patch release if it's 
    After addressing findings, update `.codex-review` to the reviewed-and-fixed `main` HEAD and
    commit it.
 
-3. **Tag and push** (annotated):
+3. **Tag and push** (annotated). Once the release PR is merged, `main` is already up to date;
+   tag it and push the tag (tags aren't branch-protected):
 
    ```bash
    git tag -a vX.Y.Z -m "vX.Y.Z"
-   git push origin main vX.Y.Z
+   git push origin vX.Y.Z
    ```
 
 4. **Publish the GitHub Release** with the changelog section as notes:
