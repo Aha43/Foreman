@@ -74,13 +74,30 @@ elsewhere on PATH.)
 ## Explorer (menu bar app)
 
 A macOS menu bar companion: glance at every project and participant, click one
-to pull its view into a Terminal window (same move semantics as `go`).
+to pull its view into a Terminal window (same move semantics as `go`). Each
+project's menu also *acts*: create a participant, pin/unpin, or end one (behind
+a confirmation) — every action is the matching `fm` command, so the explorer
+never knows anything the CLI doesn't.
+
+Two ways to run it (installed by `make install`; either way it shows "fm" in
+the menu bar):
 
 ```
-fm-explorer &                   # installed by make install; shows "fm" in the menu bar
+fm-explorer install-agent       # recommended: starts now and on every login,
+                                # and restarts itself if it ever crashes
+fm-explorer &                   # quick and manual — but dies with the terminal
+                                # you launch it from (use `nohup fm-explorer &`
+                                # to outlive it)
 ```
 
-The menu refreshes every 10 seconds. Pinned projects show a ★.
+`install-agent` registers a macOS login item (a LaunchAgent); `uninstall-agent`
+removes it. Quitting from the menu stays quit — the agent only relaunches on a
+crash, not on a deliberate Quit. Crashes are logged to
+`~/.local/state/foreman/explorer.log`.
+
+The menu re-reads state every 10 seconds — participant labels update in place,
+and the menu is only rebuilt when projects or participants come or go, so it
+never closes under your cursor while you navigate. Pinned projects show a ★.
 
 ## Config
 

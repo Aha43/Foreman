@@ -19,6 +19,35 @@ minor = features (breaking changes allowed), patch = fixes.
   one item, labeled by what a click would do — over the CLI's `pin`/`unpin` verbs. The ★
   and sort order update immediately instead of waiting out the 10-second poll. Closes #71.
 
+- **Done from the explorer, behind a confirmation.** Each project's submenu lists
+  "Done <role>…" per participant; a caution dialog stands between click and teardown —
+  "closing is harmless, ending is explicit", and a misclick must never kill a participant.
+  Anything but an explicit Done (cancel, 60-second give-up, error) answers no. Per-participant
+  only: whole-project `done` stays a deliberate CLI act. Closes #72.
+
+- **Start a dormant project from the explorer.** Projects configured in config.toml but not
+  running are listed under "start a project"; picking a role creates the first participant
+  and pulls it into a Terminal window — a project exists when its session does, so starting
+  one is just `new` on a project not running yet. Closes #70.
+
+### Fixed
+
+- **The explorer can survive its launch terminal, and leaves evidence when it dies.**
+  `fm-explorer install-agent` registers a macOS LaunchAgent that starts the explorer at login
+  and relaunches it if it crashes (but not on a deliberate Quit) — so it no longer vanishes
+  when the terminal it was launched from closes; `uninstall-agent` removes it. Either way,
+  panics are now logged to `~/.local/state/foreman/explorer.log` instead of a silent
+  disappearance, and a panic in one menu action is contained rather than taking down the whole
+  app. Closes #80.
+
+- **The explorer menu no longer closes itself while you navigate it.** The 10-second poll
+  rebuilt the entire menu every tick, slamming an open menu shut under the cursor — barely
+  noticeable on the old flat menu, unusable with submenus. The menu is now torn down only
+  when its shape changes (projects or participants appear/disappear, pins flip, config
+  changes); label-only changes update the existing items in place, which macOS renders live
+  without closing anything. Observation (state memory, waiting-notifications) still runs
+  every tick regardless. Closes #79.
+
 ### Changed
 
 - **Explorer project headers are now submenus.** Each project's header opens a submenu that
