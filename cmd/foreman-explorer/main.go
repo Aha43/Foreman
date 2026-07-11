@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/systray"
@@ -53,16 +55,17 @@ func fail(err error) {
 	}
 }
 
-// setupCrashLog points the standard logger at the explorer's log file, so a
-// panic (below) leaves evidence instead of a silent vanish (issue #80). A
-// log we can't open is not fatal — the menu still matters more.
+// setupCrashLog tees the standard logger to the explorer's log file *and*
+// stderr, so a panic (below) leaves evidence on disk for a launchd/vanished
+// run yet still prints to the terminal when run in the foreground to debug.
+// A log we can't open is not fatal — stderr alone still matters more.
 func setupCrashLog() {
 	os.MkdirAll(stateDir(), 0o755)
 	f, err := os.OpenFile(logPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return
 	}
-	log.SetOutput(f)
+	log.SetOutput(io.MultiWriter(os.Stderr, f))
 }
 
 func onReady() {
@@ -80,27 +83,39 @@ func onReady() {
 				os.Exit(1)
 			}
 		}()
-		refresh()
+		refresh(false)
 		tick := time.Tick(10 * time.Second)
 		for {
+			var force bool
 			select {
 			case <-tick:
 			case <-rebuildReq:
+				force = forcePending.Swap(false)
 			}
-			refresh()
+			refresh(force)
 		}
 	}()
 }
 
 // rebuildReq carries manual refresh requests to the rebuilder goroutine;
 // capacity 1 makes extra clicks while a rebuild is pending no-ops.
+// forcePending rides alongside it: the Refresh button wants an unconditional
+// rebuild even when the shape is unchanged, so it can repair a menu that
+// looks wrong without a shape-changing event (issue #79 review).
 var rebuildReq = make(chan struct{}, 1)
+var forcePending atomic.Bool
 
 func requestRebuild() {
 	select {
 	case rebuildReq <- struct{}{}:
 	default:
 	}
+}
+
+// requestForceRebuild asks for a full ResetMenu rebuild regardless of shape.
+func requestForceRebuild() {
+	forcePending.Store(true)
+	requestRebuild()
 }
 
 // done is closed on every menu rebuild so click-listener goroutines from the
@@ -119,16 +134,20 @@ var participantItems map[string]*systray.MenuItem
 // update the existing items in place, so an open menu is never yanked shut
 // under the user's cursor (issue #79). Action clicks change the shape, and
 // the click already closed the menu — their refresh still rebuilds.
-func refresh() {
+func refresh(force bool) {
 	// Collect windows whose client ended without passing through go/done.
 	core.SweepTermWindows()
 
 	cfg := core.LoadConfig()
 	projects, _ := core.ListProjects()
 	labels := observe(cfg, projects)
-	if shape := menuShape(cfg, projects); shape != lastShape {
+	// Compute the config-derived lists once and thread them through — both
+	// the fingerprint and the menu build need them (issue #79 review).
+	roles := roleChoices(cfg)
+	dormant := dormantNames(cfg, projects)
+	if shape := menuShape(projects, roles, dormant); force || shape != lastShape {
 		lastShape = shape
-		rebuildMenu(cfg, projects, labels)
+		rebuildMenu(projects, labels, roles, dormant)
 		return
 	}
 	for id, item := range participantItems {
@@ -155,23 +174,34 @@ func observe(cfg core.Config, projects []core.Project) map[string]string {
 // menuShape fingerprints everything whose change requires re-adding menu
 // items — systray can retitle items in place, but not change membership:
 // the projects (order and pin state), their participants (id and role),
-// and the config-derived entries (role choices, dormant projects).
-func menuShape(cfg core.Config, projects []core.Project) string {
+// and the config-derived entries (role choices, dormant projects). Every
+// field is NUL-terminated; NUL can't occur in a tmux name, id, or config
+// key, so two different structures can't collide to one fingerprint the way
+// in-band delimiters (|, ;, =) could (issue #79 review).
+func menuShape(projects []core.Project, roles, dormant []string) string {
 	var b strings.Builder
+	field := func(s string) { b.WriteString(s); b.WriteByte(0) }
 	for _, p := range projects {
-		fmt.Fprintf(&b, "%s|%v", p.Name, p.Pinned)
+		field(p.Name)
+		field(fmt.Sprintf("%v", p.Pinned))
 		for _, w := range p.Windows {
-			fmt.Fprintf(&b, ";%s=%s", w.ID, w.RoleName())
+			field(w.ID)
+			field(w.RoleName())
 		}
-		b.WriteByte('\n')
+		field("\x1e") // end of project
 	}
-	b.WriteString(strings.Join(roleChoices(cfg), ","))
-	b.WriteByte('\n')
-	b.WriteString(strings.Join(dormantNames(cfg, projects), ","))
+	field("\x1e")
+	for _, r := range roles {
+		field(r)
+	}
+	field("\x1e")
+	for _, name := range dormant {
+		field(name)
+	}
 	return b.String()
 }
 
-func rebuildMenu(cfg core.Config, projects []core.Project, labels map[string]string) {
+func rebuildMenu(projects []core.Project, labels map[string]string, roles, dormant []string) {
 	if done != nil {
 		close(done)
 	}
@@ -183,12 +213,12 @@ func rebuildMenu(cfg core.Config, projects []core.Project, labels map[string]str
 		systray.AddMenuItem("no projects", "").Disable()
 	}
 	for _, p := range projects {
-		buildProjectMenu(cfg, p, labels, done)
+		buildProjectMenu(p, labels, roles, done)
 		systray.AddSeparator()
 	}
-	buildDormant(cfg, projects, done)
+	buildDormant(dormant, roles, done)
 
-	listen(systray.AddMenuItem("Refresh", ""), done, requestRebuild)
+	listen(systray.AddMenuItem("Refresh", ""), done, requestForceRebuild)
 	listen(systray.AddMenuItem("Quit", ""), done, systray.Quit)
 }
 
@@ -196,7 +226,7 @@ func rebuildMenu(cfg core.Config, projects []core.Project, labels map[string]str
 // submenu of actions on the project, then one top-level item per participant
 // — participants stay at the top level so the at-a-glance view and the
 // one-click "pull it here" survive the actions moving in (issue #68).
-func buildProjectMenu(cfg core.Config, p core.Project, labels map[string]string, d chan struct{}) {
+func buildProjectMenu(p core.Project, labels map[string]string, roles []string, d chan struct{}) {
 	title := p.Name
 	if p.Pinned {
 		title = "★ " + title
@@ -204,7 +234,7 @@ func buildProjectMenu(cfg core.Config, p core.Project, labels map[string]string,
 	// The header must stay enabled for its submenu to open; it has no click
 	// listener, so selecting the header itself still does nothing.
 	header := systray.AddMenuItem(title, "project actions")
-	buildNewParticipant(cfg, p, header, d)
+	buildNewParticipant(p, header, roles, d)
 	// Pin/unpin is one toggle, labeled by what a click would do — judged
 	// from the project's current @fm_priority (issue #71).
 	pinLabel, pinVerb := "Pin", "pin"
@@ -244,19 +274,27 @@ func buildProjectMenu(cfg core.Config, p core.Project, labels map[string]string,
 // buildNewParticipant fills the project's actions submenu with "New
 // participant" role entries. Roles the project already has are shown
 // disabled — new would only refuse them (issue #69).
-func buildNewParticipant(cfg core.Config, p core.Project, header *systray.MenuItem, d chan struct{}) {
+func buildNewParticipant(p core.Project, header *systray.MenuItem, roles []string, d chan struct{}) {
 	menu := header.AddSubMenuItem("New participant", "start a terminal in this project")
 	have := map[string]bool{}
 	for _, w := range p.Windows {
 		have[w.RoleName()] = true
 	}
-	for _, r := range roleChoices(cfg) {
+	addRoleItems(menu, p.Name, roles, have, d)
+}
+
+// addRoleItems adds one "start this role" entry per role under menu, each
+// creating a participant in project on click; roles in have are shown
+// disabled. Shared by the live-project and dormant-project menus so they
+// can't drift (issue #79 review).
+func addRoleItems(menu *systray.MenuItem, project string, roles []string, have map[string]bool, d chan struct{}) {
+	for _, r := range roles {
 		item := menu.AddSubMenuItem(r, "")
 		if have[r] {
 			item.Disable()
 			continue
 		}
-		project, role := p.Name, r
+		role := r
 		listen(item, d, func() { newParticipant(project, role) })
 	}
 }
@@ -280,19 +318,14 @@ func roleChoices(cfg core.Config) []string {
 // does, and starting one is just new on a project not running yet
 // (issue #70). Each dormant project opens the same role choices as "New
 // participant"; the first participant brings the project to life.
-func buildDormant(cfg core.Config, projects []core.Project, d chan struct{}) {
-	dormant := dormantNames(cfg, projects)
+func buildDormant(dormant, roles []string, d chan struct{}) {
 	if len(dormant) == 0 {
 		return
 	}
 	systray.AddMenuItem("start a project", "configured, not running").Disable()
 	for _, name := range dormant {
 		menu := systray.AddMenuItem("   "+name, "start this project")
-		for _, r := range roleChoices(cfg) {
-			item := menu.AddSubMenuItem(r, "")
-			project, role := name, r
-			listen(item, d, func() { newParticipant(project, role) })
-		}
+		addRoleItems(menu, name, roles, nil, d)
 	}
 	systray.AddSeparator()
 }

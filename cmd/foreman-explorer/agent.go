@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -68,8 +69,10 @@ func xmlEscape(s string) string {
 	return s
 }
 
-// installAgent writes the plist for this very binary and (re)loads it, so the
-// running explorer is replaced by the launchd-managed one.
+// installAgent writes the plist for this very binary and (re)loads it, then
+// stops any explorer that was already running so the launchd-managed one is
+// the only instance left — otherwise a manually-launched menu keeps running
+// beside it and the user sees two icons (issue #80 review).
 func installAgent() error {
 	exePath, err := os.Executable()
 	if err != nil {
@@ -89,12 +92,32 @@ func installAgent() error {
 		return err
 	}
 	// Unload first so a reinstall over a loaded agent takes; nothing loaded
-	// yet is not an error.
+	// yet is not an error. Stop any manually-launched instance before load so
+	// launchd's fresh one doesn't become a second icon.
 	exec.Command("launchctl", "unload", plistPath).Run()
+	terminateOtherInstances(exePath)
 	if out, err := exec.Command("launchctl", "load", plistPath).CombinedOutput(); err != nil {
 		return fmt.Errorf("launchctl load %s: %v: %s", plistPath, err, strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+// terminateOtherInstances stops every running explorer except this
+// short-lived install-agent process. Best-effort: no pgrep, no matches, or a
+// kill that races an already-exiting process are all fine.
+func terminateOtherInstances(exePath string) {
+	self := os.Getpid()
+	out, err := exec.Command("pgrep", "-x", filepath.Base(exePath)).Output()
+	if err != nil {
+		return
+	}
+	for _, field := range strings.Fields(string(out)) {
+		pid, err := strconv.Atoi(field)
+		if err != nil || pid == self {
+			continue
+		}
+		exec.Command("kill", field).Run()
+	}
 }
 
 // uninstallAgent unloads and removes the plist; a missing plist is fine.
