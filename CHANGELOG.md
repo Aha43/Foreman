@@ -8,6 +8,15 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-11
+
+Sprint 6 — the explorer grows hands. Its menu, previously read-and-navigate only, now *acts*:
+create a participant, start a dormant project, pin/unpin, or end one behind a confirmation —
+each over the matching `fm` verb, so the menu never knows anything the CLI doesn't. Two shakedown
+fixes from days of real use (the menu no longer closes under the cursor mid-navigation; the app
+survives its launch terminal and logs its own crashes), and a multi-agent pre-release review
+caught six more before the cut — chiefly `install-agent` leaving a duplicate menu-bar icon.
+
 ### Added
 
 - **New participants from the explorer.** Each project's submenu gains "New participant"
@@ -278,7 +287,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Aha43/Foreman/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/Aha43/Foreman/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Aha43/Foreman/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Aha43/Foreman/compare/v0.3.0...v0.4.0
