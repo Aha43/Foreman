@@ -37,7 +37,10 @@ func cmdNew(project, role string) error {
 			return fmt.Errorf("project %s already has a %q terminal (%s) — use: foreman %s go %s",
 				project, role, w.ID, project, role)
 		}
-		wid, err = core.Tmux("new-window", "-t", "="+core.SessionName(project), "-n", role,
+		// -d: create in the background. Without it, new from inside an
+		// attached terminal jumps the view before the go prompt below has
+		// asked (issue #54) — moving the view is go's job alone.
+		wid, err = core.Tmux("new-window", "-d", "-t", "="+core.SessionName(project), "-n", role,
 			"-c", dir, "-P", "-F", "#{window_id}")
 	}
 	if err != nil {
