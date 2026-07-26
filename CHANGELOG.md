@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`new` no longer jumps the view before asking.** Run from inside an attached project
+  terminal, `new` switched tmux to the just-created window immediately — so the
+  "go to X? [Y/n]" prompt asked a question that was already answered, and `n` didn't switch
+  back. Windows are now created in the background; moving the view is `go`'s job alone.
+  Closes #54.
+
 ## [0.7.0] - 2026-07-26
 
 An off-cycle feature: projects can finally change their name. Since a project *is* its tmux
