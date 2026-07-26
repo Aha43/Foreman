@@ -8,6 +8,17 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **A brand-new project from the explorer.** The "New project…" submenu creates a project the
+  config doesn't know about: pick the first participant's role, type the project's name in a
+  dialog, and it comes to life in a Terminal window. With no configured root the terminal
+  starts in `$HOME` (configure `[project.<name>] root` to move it). Closes #73.
+
+- **Project names are validated at creation.** The v0.7.0 rename guard now applies everywhere
+  a project can come to life: `new` and `adopt` refuse names foreman could never address —
+  reserved verb names, a leading `-` or `__`, and `.` `:` `[` `]` or control characters.
+
 ### Fixed
 
 - **`new` no longer jumps the view before asking.** Run from inside an attached project

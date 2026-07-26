@@ -25,6 +25,11 @@ func cmdInit() error {
 }
 
 func cmdNew(project, role string) error {
+	// Validate before this can mint a session — a name tmux can't target
+	// (or that dispatches as a verb) must never come to life (issue #73).
+	if err := core.ValidateProjectName(project); err != nil {
+		return err
+	}
 	cfg := core.LoadConfig()
 	dir := cfg.WorkDir(project, role)
 	var wid string
@@ -143,6 +148,10 @@ func cmdGoWindow(project, role string) error {
 }
 
 func cmdAdopt(project, role string) error {
+	// Same reason as new: adopt can mint the session (issue #73).
+	if err := core.ValidateProjectName(project); err != nil {
+		return err
+	}
 	if !core.InsideTmux() {
 		return fmt.Errorf("adopt must run from inside a tmux terminal (the one to adopt)")
 	}
@@ -276,11 +285,6 @@ func cmdPin(project string, on bool) error {
 }
 
 func cmdRename(project, newName string) error {
-	// Verbs are reserved as project names (see projectVerbs) — a project
-	// named "done" could never be addressed with the name omitted.
-	if projectVerbs[newName] || newName == "list" || newName == "init" || newName == "help" {
-		return fmt.Errorf("%q is a foreman verb — reserved as a project name", newName)
-	}
 	if err := core.RenameProject(project, newName); err != nil {
 		return err
 	}

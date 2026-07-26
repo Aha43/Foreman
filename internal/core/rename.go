@@ -1,10 +1,6 @@
 package core
 
-import (
-	"fmt"
-	"strings"
-	"unicode"
-)
+import "fmt"
 
 // RenameProject renames a project everywhere its name lives: the tmux
 // session (when running) and the [project.name] config section (when
@@ -13,18 +9,11 @@ import (
 // color, the ticker argument and @fm_project all embed the name, so styling
 // is re-stamped. Renaming a dormant project is purely the config edit.
 func RenameProject(old, newName string) error {
-	if newName == "" {
-		return fmt.Errorf("new name is empty")
+	if err := ValidateProjectName(newName); err != nil {
+		return err
 	}
 	if newName == old {
 		return fmt.Errorf("%s is already named %s", old, newName)
-	}
-	// tmux accepts ':' and '.' in a session name but its targets split on
-	// them — rename-session would succeed and the session could never be
-	// addressed again. '[' and ']' would corrupt the config section header,
-	// control characters the line-based tmux output foreman parses.
-	if strings.ContainsAny(newName, ".:[]") || strings.ContainsFunc(newName, unicode.IsControl) {
-		return fmt.Errorf("project name %q won't work: no . : [ ] or control characters", newName)
 	}
 	live := SessionExists(old)
 	cfg := LoadConfig()
