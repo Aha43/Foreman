@@ -247,6 +247,7 @@ func buildProjectMenu(p core.Project, labels map[string]string, roles []string, 
 		execFm(project, verb)
 		requestRebuild()
 	})
+	addRenameItem(header, p.Name, d)
 	// Done entries sit behind the header submenu and a confirmation dialog —
 	// two steps from the top-level go-click, on purpose (issue #72). The
 	// ellipsis is the macOS "asks before acting" convention.
@@ -326,6 +327,8 @@ func buildDormant(dormant, roles []string, d chan struct{}) {
 	for _, name := range dormant {
 		menu := systray.AddMenuItem("   "+name, "start this project")
 		addRoleItems(menu, name, roles, nil, d)
+		menu.AddSeparator()
+		addRenameItem(menu, name, d)
 	}
 	systray.AddSeparator()
 }
@@ -344,6 +347,19 @@ func dormantNames(cfg core.Config, projects []core.Project) []string {
 	}
 	sort.Strings(dormant)
 	return dormant
+}
+
+// addRenameItem adds a "Rename…" entry under menu, prompting for the new
+// name and handing it to the CLI's rename verb — live or dormant, the CLI
+// decides what the rename means. Shared by both menus so they can't drift.
+func addRenameItem(menu *systray.MenuItem, project string, d chan struct{}) {
+	item := menu.AddSubMenuItem("Rename…", "rename the project — session and config follow")
+	listen(item, d, func() {
+		if newName := promptRename(project); newName != "" && newName != project {
+			execFm(project, "rename", newName)
+			requestRebuild()
+		}
+	})
 }
 
 // newParticipant creates the terminal (fm new without a TTY creates without
@@ -442,6 +458,27 @@ func confirmDone(project, role string) bool {
 		"-e", "end run",
 		fmt.Sprintf("End %s in project %s? Its terminal closes for real.", role, project)).Run()
 	return err == nil
+}
+
+// promptRename asks for the project's new name in a text dialog, prefilled
+// with the current name. Same rules as confirmDone: the strings travel as
+// osascript arguments (#30), the dialog gives itself up after 60s with a
+// Go-side backstop (#62), and anything but an explicit Rename — cancel,
+// give-up, timeout, error, an emptied field — returns "" and means no.
+func promptRename(project string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "osascript",
+		"-e", "on run argv",
+		"-e", `set r to display dialog (item 1 of argv) with title "foreman" default answer (item 2 of argv) buttons {"Cancel", "Rename"} default button "Rename" cancel button "Cancel" giving up after 60`,
+		"-e", `if gave up of r then error number -128`,
+		"-e", `return text returned of r`,
+		"-e", "end run",
+		fmt.Sprintf("Rename project %s to:", project), project).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // notify posts a macOS notification; the message travels as an osascript

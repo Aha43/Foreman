@@ -19,6 +19,7 @@ foreman <project> list           terminals in the project
 foreman <project> adopt <role>   pull the terminal you're in into the project
 foreman <project> done [role]    close one terminal, or the whole project
 foreman <project> pin|unpin      mark the project as priority (sorts first in list)
+foreman <project> rename <name>  give the project a new name (updates config too)
 ```
 
 The project name can be omitted — `foreman new coder` infers it: inside a
