@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-26
+
+Sprint 7 — new by name. The explorer can now create a project the config has never heard of:
+pick a role, type a name, and it comes to life — the last creation path that still required
+the CLI. The name validation born in the v0.7.0 rename review now stands guard everywhere a
+project can come to life, and `new` no longer jumps the view before its own go prompt has
+asked.
+
 ### Added
 
 - **A brand-new project from the explorer.** The "New project…" submenu creates a project the
@@ -323,7 +331,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Aha43/Foreman/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Aha43/Foreman/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Aha43/Foreman/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/Aha43/Foreman/compare/v0.5.0...v0.5.1
