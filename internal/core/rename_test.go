@@ -112,6 +112,17 @@ func TestRenameProjectGuards(t *testing.T) {
 			t.Errorf("want already-exists error, got %v", err)
 		}
 	})
+	t.Run("unaddressable characters", func(t *testing.T) {
+		// tmux would accept these names but its targets split on : and .
+		// — the session would be stranded (pre-release review, v0.7.0).
+		writeConfig(t, "")
+		liveSessions(t, "A")
+		for _, bad := range []string{"my.app", "a:b", "x[1]", "a\nb"} {
+			if err := RenameProject("A", bad); err == nil {
+				t.Errorf("want error renaming to %q", bad)
+			}
+		}
+	})
 	t.Run("empty and same name", func(t *testing.T) {
 		writeConfig(t, "")
 		liveSessions(t, "A")

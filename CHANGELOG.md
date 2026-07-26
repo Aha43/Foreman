@@ -8,6 +8,15 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-26
+
+An off-cycle feature: projects can finally change their name. Since a project *is* its tmux
+session, rename means renaming the session and re-stamping everything that embeds the name —
+plus the config section, so dormant projects rename too. The pre-release review caught a
+release-blocker: tmux happily renames a session to a name containing `.` or `:`, but its
+targets split on those, so foreman could never address the project again — such names are
+now refused.
+
 ### Added
 
 - **Rename a project.** `foreman <project> rename <name>` renames the tmux session (when
@@ -295,7 +304,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Aha43/Foreman/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Aha43/Foreman/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/Aha43/Foreman/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Aha43/Foreman/compare/v0.4.0...v0.5.0
