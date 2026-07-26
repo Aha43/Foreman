@@ -120,7 +120,8 @@ func main() {
 
 // projectVerbs are the project-scoped verbs; in first position they mean
 // the project name was omitted. This reserves them as project names
-// (list/init/help were already taken by the global commands).
+// (list/init/help were already taken by the global commands). Must track
+// reservedProjectNames in internal/core/name.go.
 var projectVerbs = map[string]bool{
 	"new": true, "go": true, "adopt": true, "done": true, "pin": true, "unpin": true,
 	"rename": true,

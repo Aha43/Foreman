@@ -76,9 +76,10 @@ elsewhere on PATH.)
 
 A macOS menu bar companion: glance at every project and participant, click one
 to pull its view into a Terminal window (same move semantics as `go`). Each
-project's menu also *acts*: create a participant, pin/unpin, or end one (behind
-a confirmation) — every action is the matching `fm` command, so the explorer
-never knows anything the CLI doesn't.
+project's menu also *acts*: create a participant or a brand-new project by
+name, pin/unpin, rename, or end one (behind a confirmation) — every action is
+the matching `fm` command, so the explorer never knows anything the CLI
+doesn't.
 
 Two ways to run it (installed by `make install`; either way it shows "fm" in
 the menu bar):

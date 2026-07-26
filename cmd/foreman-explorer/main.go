@@ -217,6 +217,7 @@ func rebuildMenu(projects []core.Project, labels map[string]string, roles, dorma
 		systray.AddSeparator()
 	}
 	buildDormant(dormant, roles, done)
+	buildNewProject(roles, done)
 
 	listen(systray.AddMenuItem("Refresh", ""), done, requestForceRebuild)
 	listen(systray.AddMenuItem("Quit", ""), done, systray.Quit)
@@ -333,6 +334,32 @@ func buildDormant(dormant, roles []string, d chan struct{}) {
 	systray.AddSeparator()
 }
 
+// buildNewProject adds the "New project…" submenu: pick the first
+// participant's role, then name the project in a dialog — a project the
+// config doesn't know about yet, created by typed name (issue #73). The
+// name is validated up front: an invalid one must never reach the CLI,
+// where a reserved name like "list" would dispatch as the command instead
+// of the project.
+func buildNewProject(roles []string, d chan struct{}) {
+	menu := systray.AddMenuItem("New project…", "create a project by name")
+	for _, r := range roles {
+		item := menu.AddSubMenuItem(r, "start the project with this participant")
+		role := r
+		listen(item, d, func() {
+			name := promptText(fmt.Sprintf("Name the new project (first participant: %s):", role), "", "Create")
+			if name == "" {
+				return
+			}
+			if err := core.ValidateProjectName(name); err != nil {
+				notify(err.Error())
+				return
+			}
+			newParticipant(name, role)
+		})
+	}
+	systray.AddSeparator()
+}
+
 // dormantNames is the configured projects with no live session, sorted.
 func dormantNames(cfg core.Config, projects []core.Project) []string {
 	live := map[string]bool{}
@@ -355,7 +382,8 @@ func dormantNames(cfg core.Config, projects []core.Project) []string {
 func addRenameItem(menu *systray.MenuItem, project string, d chan struct{}) {
 	item := menu.AddSubMenuItem("Rename…", "rename the project — session and config follow")
 	listen(item, d, func() {
-		if newName := promptRename(project); newName != "" && newName != project {
+		newName := promptText(fmt.Sprintf("Rename project %s to:", project), project, "Rename")
+		if newName != "" && newName != project {
 			execFm(project, "rename", newName)
 			requestRebuild()
 		}
@@ -376,7 +404,14 @@ func newParticipant(project, role string) {
 // execFm runs an fm verb silently and reports whether it succeeded; a
 // failure surfaces the CLI's own message as a notification.
 func execFm(args ...string) bool {
-	out, err := exec.Command(fmBinary(), args...).CombinedOutput()
+	cmd := exec.Command(fmBinary(), args...)
+	// The explorer's own cwd is meaningless ("/" under launchd) — run fm
+	// from $HOME so new's cwd fallback for a project with no configured
+	// root lands somewhere sensible (issue #73).
+	if home, err := os.UserHomeDir(); err == nil {
+		cmd.Dir = home
+	}
+	out, err := cmd.CombinedOutput()
 	if err == nil {
 		return true
 	}
@@ -460,21 +495,21 @@ func confirmDone(project, role string) bool {
 	return err == nil
 }
 
-// promptRename asks for the project's new name in a text dialog, prefilled
-// with the current name. Same rules as confirmDone: the strings travel as
-// osascript arguments (#30), the dialog gives itself up after 60s with a
-// Go-side backstop (#62), and anything but an explicit Rename — cancel,
+// promptText asks for a line of text in a dialog, prefilled with def; ok
+// labels the confirming button. Same rules as confirmDone: the strings
+// travel as osascript arguments (#30), the dialog gives itself up after 60s
+// with a Go-side backstop (#62), and anything but an explicit ok — cancel,
 // give-up, timeout, error, an emptied field — returns "" and means no.
-func promptRename(project string) string {
+func promptText(msg, def, ok string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, "osascript",
 		"-e", "on run argv",
-		"-e", `set r to display dialog (item 1 of argv) with title "foreman" default answer (item 2 of argv) buttons {"Cancel", "Rename"} default button "Rename" cancel button "Cancel" giving up after 60`,
+		"-e", `set r to display dialog (item 1 of argv) with title "foreman" default answer (item 2 of argv) buttons {"Cancel", item 3 of argv} default button 2 cancel button "Cancel" giving up after 60`,
 		"-e", `if gave up of r then error number -128`,
 		"-e", `return text returned of r`,
 		"-e", "end run",
-		fmt.Sprintf("Rename project %s to:", project), project).Output()
+		msg, def, ok).Output()
 	if err != nil {
 		return ""
 	}
