@@ -272,6 +272,19 @@ func cmdPin(project string, on bool) error {
 	return nil
 }
 
+func cmdRename(project, newName string) error {
+	// Verbs are reserved as project names (see projectVerbs) — a project
+	// named "done" could never be addressed with the name omitted.
+	if projectVerbs[newName] || newName == "list" || newName == "init" || newName == "help" {
+		return fmt.Errorf("%q is a foreman verb — reserved as a project name", newName)
+	}
+	if err := core.RenameProject(project, newName); err != nil {
+		return err
+	}
+	fmt.Printf("renamed %s to %s\n", project, newName)
+	return nil
+}
+
 func cmdList(project string) error {
 	if !core.SessionExists(project) {
 		return fmt.Errorf("no project %s", project)

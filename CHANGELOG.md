@@ -8,6 +8,14 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **Rename a project.** `foreman <project> rename <name>` renames the tmux session (when
+  running) and the `[project.<name>]` section in config.toml (when configured), then re-stamps
+  the badge, name-derived color, and ticker — pin state and participants ride along. Dormant
+  projects rename too (a pure config edit). The explorer gains a "Rename…" entry in each
+  project's submenu — live and dormant — prompting in a dialog and delegating to the CLI verb.
+
 ## [0.6.0] - 2026-07-11
 
 Sprint 6 — the explorer grows hands. Its menu, previously read-and-navigate only, now *acts*:

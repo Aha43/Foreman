@@ -124,6 +124,39 @@ func InitConfig() (string, error) {
 	return path, nil
 }
 
+// RenameProjectInConfig rewrites the [project.old] section header to name
+// the project newName, leaving every other line — comments, roles, the
+// section's own keys — untouched. A missing config or absent section is not
+// an error (not every project is configured); the bool reports whether a
+// header was rewritten.
+func RenameProjectInConfig(old, newName string) (bool, error) {
+	path := ConfigPath()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	lines := strings.Split(string(data), "\n")
+	found := false
+	for i, line := range lines {
+		t := strings.TrimSpace(line)
+		if !strings.HasPrefix(t, "[") || !strings.HasSuffix(t, "]") {
+			continue
+		}
+		parts := strings.SplitN(strings.Trim(t, "[]"), ".", 2)
+		if len(parts) == 2 && parts[0] == "project" && parts[1] == old {
+			lines[i] = "[project." + newName + "]"
+			found = true
+		}
+	}
+	if !found {
+		return false, nil
+	}
+	return true, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+}
+
 func ExpandHome(p string) string {
 	if strings.HasPrefix(p, "~/") {
 		home, _ := os.UserHomeDir()

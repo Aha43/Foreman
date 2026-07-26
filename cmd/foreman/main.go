@@ -20,6 +20,7 @@ usage:
   foreman <project> adopt <role>   pull the current terminal into the project
   foreman <project> done [role]    close one terminal, or the whole project
   foreman <project> pin|unpin      mark the project as priority
+  foreman <project> rename <name>  give the project a new name (updates config too)
 
 <project> can be omitted (foreman new coder): inferred from the managed
 terminal you're in, else the configured root containing the current
@@ -88,10 +89,10 @@ func main() {
 
 	switch verb {
 	case "new":
-		requireArg(verb, arg)
+		requireArg(verb, arg, "role")
 		fail(cmdNew(project, arg))
 	case "go":
-		requireArg(verb, arg)
+		requireArg(verb, arg, "role")
 		if hasFlag(args[3:], "--window") {
 			fail(cmdGoWindow(project, arg))
 		} else {
@@ -100,7 +101,7 @@ func main() {
 	case "list":
 		fail(cmdList(project))
 	case "adopt":
-		requireArg(verb, arg)
+		requireArg(verb, arg, "role")
 		fail(cmdAdopt(project, arg))
 	case "done":
 		fail(cmdDone(project, arg))
@@ -108,6 +109,9 @@ func main() {
 		fail(cmdPin(project, true))
 	case "unpin":
 		fail(cmdPin(project, false))
+	case "rename":
+		requireArg(verb, arg, "name")
+		fail(cmdRename(project, arg))
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command %q\n\n%s", verb, usage)
 		os.Exit(2)
@@ -119,6 +123,7 @@ func main() {
 // (list/init/help were already taken by the global commands).
 var projectVerbs = map[string]bool{
 	"new": true, "go": true, "adopt": true, "done": true, "pin": true, "unpin": true,
+	"rename": true,
 }
 
 func hasFlag(rest []string, flag string) bool {
@@ -130,9 +135,9 @@ func hasFlag(rest []string, flag string) bool {
 	return false
 }
 
-func requireArg(verb, arg string) {
+func requireArg(verb, arg, what string) {
 	if arg == "" {
-		fmt.Fprintf(os.Stderr, "usage: foreman <project> %s <role>\n", verb)
+		fmt.Fprintf(os.Stderr, "usage: foreman <project> %s <%s>\n", verb, what)
 		os.Exit(2)
 	}
 }
