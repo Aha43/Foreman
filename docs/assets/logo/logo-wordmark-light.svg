@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="112" viewBox="0 0 420 112" role="img" aria-label="foreman — terminals by project">
+  <rect x="16.5" y="24.5" width="63" height="63" rx="14" fill="#3F4244" stroke="#595C5E"></rect>
+  <g transform="translate(30 38) scale(1.5)" color="#DDDDDD">
+  <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 3.6h8a3.4 3.4 0 0 1 3.4 3.4v8"></path>
+    <rect x="3.2" y="8.2" width="12.8" height="12.6" rx="2.6"></rect>
+    <path d="M6.4 12.6l1.7 1.6 -1.7 1.6"></path>
+  </g>
+  <path d="M10.6 15.9h2.6" fill="none" stroke="#3FA463" stroke-width="2" stroke-linecap="round"></path>
+  </g>
+  <text x="100" y="62" fill="#3F4244" font-family="ui-monospace, &#39;SF Mono&#39;, &#39;JetBrains Mono&#39;, Menlo, Consolas, monospace" font-size="40" font-weight="700" letter-spacing="-0.5">foreman</text>
+  <text x="102" y="80" fill="#767B7E" font-family="-apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, system-ui, sans-serif" font-size="11" font-weight="700" letter-spacing="2">TERMINALS BY PROJECT</text>
+</svg>

@@ -1,4 +1,9 @@
-# foreman
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo/logo-wordmark.svg">
+    <img src="docs/assets/logo/logo-wordmark-light.svg" width="420" alt="foreman — terminals by project">
+  </picture>
+</p>
 
 Organize terminals by **project**, on top of tmux.
 New to the terminal-server idea? Read [how foreman works](docs/how-it-works.md).

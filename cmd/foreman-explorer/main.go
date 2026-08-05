@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"log"
@@ -68,8 +69,16 @@ func setupCrashLog() {
 	log.SetOutput(io.MultiWriter(os.Stderr, f))
 }
 
+// The menu bar icon is the foreman mark rendered black-on-transparent — a
+// macOS template image, so the system recolors it for light/dark menu bars.
+// Derived from docs/assets/logo/logo-mark.svg (regeneration recipe in the
+// logo README).
+//
+//go:embed icon-template.png
+var iconTemplate []byte
+
 func onReady() {
-	systray.SetTitle("fm")
+	systray.SetTemplateIcon(iconTemplate, iconTemplate)
 	systray.SetTooltip("foreman — terminals by project")
 	// All menu work happens on this one goroutine — the timer and manual
 	// Refresh both feed it, so the done channel and the systray menu are
