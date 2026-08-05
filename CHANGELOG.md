@@ -8,6 +8,13 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **foreman has a face.** A logo — stacked terminal panes, the front one live and prompting —
+  now marks every surface: the explorer's menu bar icon (a macOS template image replacing the
+  `fm` text, correct in light and dark menu bars), the README wordmark, and the project site's
+  header and favicon. Assets and brand rules live in `docs/assets/logo/`. Closes #90.
+
 ## [0.8.0] - 2026-07-26
 
 Sprint 7 — new by name. The explorer can now create a project the config has never heard of:
