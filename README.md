@@ -21,7 +21,8 @@ foreman <project> new <role>     new terminal in the project (runs role preset, 
 foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
                                  --window to open a new Terminal window instead)
 foreman <project> list           terminals in the project
-foreman <project> adopt <role>   pull the terminal you're in into the project
+foreman <project> adopt <role>   pull the terminal you're in into the project (works
+                                 outside tmux too — see below)
 foreman <project> done [role]    close one terminal, or the whole project
 foreman <project> pin|unpin      mark the project as priority (sorts first in list)
 foreman <project> rename <name>  give the project a new name (updates config too)
@@ -36,6 +37,14 @@ names. Bare `foreman list` always shows all projects.)
 After creating a terminal, `new` offers to jump to it (`go to coder? [Y/n]`,
 plain Enter goes). The prompt only appears on a TTY — scripted use creates
 without going.
+
+`adopt` also works from a plain terminal opened the usual way. A running
+shell can never be *moved* into tmux (the OS won't re-wire a live process),
+so foreman does the closest honest thing: it creates a new participant whose
+shell starts in your current directory and attaches the window you're in as
+its viewer — badge, observation, and explorer visibility included. Detach
+and the shell you were in comes back; only a program *already running* in
+that shell stays outside tmux.
 
 Example session:
 

@@ -17,7 +17,8 @@ usage:
   foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
                                    --window to open a new Terminal window instead)
   foreman <project> list           terminals in the project
-  foreman <project> adopt <role>   pull the current terminal into the project
+  foreman <project> adopt <role>   pull the current terminal into the project (outside
+                                   tmux: new shell in the current dir, viewed here)
   foreman <project> done [role]    close one terminal, or the whole project
   foreman <project> pin|unpin      mark the project as priority
   foreman <project> rename <name>  give the project a new name (updates config too)

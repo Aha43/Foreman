@@ -10,6 +10,16 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ### Added
 
+- **`adopt` works from a plain terminal.** Outside tmux, `adopt` no longer errors: since a
+  running shell can't be moved into tmux (no pty re-wiring on macOS), it creates a new
+  participant starting in the current directory — role presets deliberately not run — and
+  attaches the window you're in as its viewer. The old shell resumes on detach, and the
+  window is user-opened, so it is never auto-closed. Bare `foreman adopt <role>` infers the
+  project from the configured root containing your directory, else the directory name.
+  Closes #92.
+
+### Added
+
 - **foreman has a face.** A logo — stacked terminal panes, the front one live and prompting —
   now marks every surface: the explorer's menu bar icon (a macOS template image replacing the
   `fm` text, correct in light and dark menu bars), the README wordmark, and the project site's
