@@ -95,8 +95,8 @@ name, pin/unpin, rename, or end one (behind a confirmation) — every action is
 the matching `fm` command, so the explorer never knows anything the CLI
 doesn't.
 
-Two ways to run it (installed by `make install`; either way it shows "fm" in
-the menu bar):
+Two ways to run it (installed by `make install`; either way it shows the
+foreman mark in the menu bar):
 
 ```
 fm-explorer install-agent       # recommended: starts now and on every login,

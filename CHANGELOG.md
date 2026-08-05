@@ -8,15 +8,11 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
-### Added
+## [0.9.0] - 2026-08-05
 
-- **`adopt` works from a plain terminal.** Outside tmux, `adopt` no longer errors: since a
-  running shell can't be moved into tmux (no pty re-wiring on macOS), it creates a new
-  participant starting in the current directory — role presets deliberately not run — and
-  attaches the window you're in as its viewer. The old shell resumes on detach, and the
-  window is user-opened, so it is never auto-closed. Bare `foreman adopt <role>` infers the
-  project from the configured root containing your directory, else the directory name.
-  Closes #92.
+An off-cycle pair, no sprint: foreman gets its visual identity, and `adopt` learns to meet
+the one terminal it couldn't — the plain kind. The pre-release review caught the new adopt
+path exiting half-done under scripted use; fixed before the cut.
 
 ### Added
 
@@ -24,6 +20,15 @@ minor = features (breaking changes allowed), patch = fixes.
   now marks every surface: the explorer's menu bar icon (a macOS template image replacing the
   `fm` text, correct in light and dark menu bars), the README wordmark, and the project site's
   header and favicon. Assets and brand rules live in `docs/assets/logo/`. Closes #90.
+
+- **`adopt` works from a plain terminal.** Outside tmux, `adopt` no longer errors: since a
+  running shell can't be moved into tmux (no pty re-wiring on macOS), it creates a new
+  participant starting in the current directory — role presets deliberately not run — and
+  attaches the window you're in as its viewer. The old shell resumes on detach, and the
+  window is user-opened, so it is never auto-closed. Bare `foreman adopt <role>` infers the
+  project from the configured root containing your directory, else the directory name.
+  Scripted use (no TTY) creates without attaching and prints the `go` hint — the same
+  contract as `new`. Closes #92.
 
 ## [0.8.0] - 2026-07-26
 
@@ -348,7 +353,8 @@ The MVP: project-organized terminals on top of tmux, plus the macOS menu bar exp
 - `foreman list` shows the attached client count per project.
 - Status display prefers the pane title over the process name.
 
-[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Aha43/Foreman/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/Aha43/Foreman/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Aha43/Foreman/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Aha43/Foreman/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Aha43/Foreman/compare/v0.5.1...v0.6.0
