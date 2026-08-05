@@ -153,7 +153,7 @@ func cmdAdopt(project, role string) error {
 		return err
 	}
 	if !core.InsideTmux() {
-		return fmt.Errorf("adopt must run from inside a tmux terminal (the one to adopt)")
+		return adoptPlainTerminal(project, role)
 	}
 	wid, err := core.Tmux("display-message", "-p", "#{window_id}")
 	if err != nil {
@@ -204,6 +204,52 @@ func cmdAdopt(project, role string) error {
 	core.Tmux("switch-client", "-t", wid)
 	fmt.Printf("adopted this terminal into %s as %q\n", project, role)
 	return nil
+}
+
+// adoptPlainTerminal is adopt's outside-tmux path. A shell born in a plain
+// terminal can never be moved into tmux — the OS offers no way to re-wire a
+// live process's pty (issue #92) — so do the closest honest thing: create a
+// participant whose shell starts where the user is, and attach this window
+// as its viewer. The original shell resumes on detach; anything already
+// running in it stays outside tmux, which the output says out loud.
+func adoptPlainTerminal(project, role string) error {
+	// Same identity guard as the tmux path, minus the "already adopted"
+	// case — a plain terminal isn't a participant yet by definition.
+	if core.SessionExists(project) {
+		if w, err := core.FindWindow(project, role); err == nil {
+			return fmt.Errorf("project %s already has a %q terminal (%s) — pick another role name",
+				project, role, w.ID)
+		}
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// Adopt means "continue here": the cwd wins over the configured
+	// dir/root, and no role preset runs — adopt takes a shell as it is
+	// (the tmux-window path doesn't run presets either).
+	var wid string
+	if !core.SessionExists(project) {
+		wid, err = core.Tmux("new-session", "-d", "-s", core.SessionName(project), "-n", role,
+			"-c", dir, "-P", "-F", "#{window_id}")
+	} else {
+		wid, err = core.Tmux("new-window", "-d", "-t", "="+core.SessionName(project), "-n", role,
+			"-c", dir, "-P", "-F", "#{window_id}")
+	}
+	if err != nil {
+		return err
+	}
+	core.Tmux("set-option", "-w", "-t", wid, "@fm_role", role)
+	core.Tmux("set-option", "-w", "-t", wid, "automatic-rename", "off")
+	fmt.Printf("a running shell can't move into tmux — created %s/%s in %s instead\n"+
+		"and attaching this window to it (detach returns you to the shell you were in)\n",
+		project, role, dir)
+	if cmd := core.LoadConfig().Roles[role].Cmd; cmd != "" {
+		fmt.Printf("note: role %q has a cmd, which adopt does not run: %s\n", role, cmd)
+	}
+	// cmdGo re-stamps styling and attaches; this window is user-opened, so
+	// it is deliberately never recorded for auto-close.
+	return cmdGo(project, role, false)
 }
 
 func cmdDone(project, role string) error {
