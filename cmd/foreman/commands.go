@@ -241,12 +241,19 @@ func adoptPlainTerminal(project, role string) error {
 	}
 	core.Tmux("set-option", "-w", "-t", wid, "@fm_role", role)
 	core.Tmux("set-option", "-w", "-t", wid, "automatic-rename", "off")
-	fmt.Printf("a running shell can't move into tmux — created %s/%s in %s instead\n"+
-		"and attaching this window to it (detach returns you to the shell you were in)\n",
+	fmt.Printf("a running shell can't move into tmux — created %s/%s in %s instead\n",
 		project, role, dir)
 	if cmd := core.LoadConfig().Roles[role].Cmd; cmd != "" {
 		fmt.Printf("note: role %q has a cmd, which adopt does not run: %s\n", role, cmd)
 	}
+	// Attaching needs a real terminal — scripted use creates without going,
+	// same contract as new (issue #28), instead of dying half-done on the
+	// attach after the participant already exists.
+	if !stdinIsTTY() {
+		fmt.Printf("  foreman %s go %s   # to view it here\n", project, role)
+		return nil
+	}
+	fmt.Println("attaching this window to it (detach returns you to the shell you were in)")
 	// cmdGo re-stamps styling and attaches; this window is user-opened, so
 	// it is deliberately never recorded for auto-close.
 	return cmdGo(project, role, false)
