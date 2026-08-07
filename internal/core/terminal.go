@@ -10,6 +10,31 @@ import (
 	"time"
 )
 
+// nowUnix is the sweep's clock; a seam so tests can age strikes at will.
+var nowUnix = func() int64 { return time.Now().Unix() }
+
+// strikeMinAge is how long a strike must stand before its window may be
+// closed. Strikes used to be judged by sweep *count* alone, but sweeps are
+// not evenly spaced — a click-triggered rebuild sweeps immediately, and the
+// periodic tick can land right behind it, collapsing the newborn grace to
+// milliseconds and closing a window whose client simply hadn't attached yet
+// (issue #95). One tick cycle of wall-clock age restores the intended
+// "absent across two looks a cycle apart" meaning.
+const strikeMinAge = 10 * time.Second
+
+// splitStrike parses a tracking value: the tty base, whether it carries a
+// strike, and the strike's unix time (0 for a pre-#95 bare "?" strike).
+func splitStrike(value string) (tty string, struck bool, since int64) {
+	tty, rest, struck := strings.Cut(value, "?")
+	since, _ = strconv.ParseInt(rest, 10, 64)
+	return tty, struck, since
+}
+
+// strikeValue stamps a strike on a tty value: "<tty>?<unix time>".
+func strikeValue(tty string) string {
+	return fmt.Sprintf("%s?%d", tty, nowUnix())
+}
+
 // macOS Terminal.app integration: foreman opens windows for views, tracks
 // them, and closes them again once their view moves away (issue #43) — the
 // fix for "soulless" [detached] windows piling up. Tracking lives in tmux
@@ -75,8 +100,9 @@ func termWinKey(windowID string) string {
 }
 
 // trackedWindows reads every tracking option: window id → tty. A trailing
-// "?" on the tty is the sweep's strike marker, kept verbatim. Nil means the
-// listing itself failed — callers must treat that as "unknown", not "none".
+// "?<unix time>" on the tty is the sweep's strike marker (when it was
+// struck), kept verbatim. Nil means the listing itself failed — callers must
+// treat that as "unknown", not "none".
 func trackedWindows() map[string]string {
 	out, err := Tmux("show-options", "-s")
 	if err != nil {
@@ -116,11 +142,11 @@ func recordTermWindow(tty, windowID string) error {
 	// Close it here — left tracked, the recycled tty's live client would make
 	// the sweep believe the husk is attached, forever (issue #56).
 	for id, val := range trackedWindows() {
-		if id == windowID || strings.TrimSuffix(val, "?") != base {
+		if tty, _, _ := splitStrike(val); id == windowID || tty != base {
 			continue
 		}
 		// A concurrent sweep may have judged this entry since the snapshot.
-		if strings.TrimSuffix(trackedValue(id), "?") != base {
+		if tty, _, _ := splitStrike(trackedValue(id)); tty != base {
 			continue
 		}
 		closeTracked(id, base)
@@ -140,7 +166,7 @@ func recordTermWindow(tty, windowID string) error {
 func CloseTermWindow(tty string) {
 	base := filepath.Base(tty)
 	for id, val := range trackedWindows() {
-		if strings.TrimSuffix(val, "?") == base {
+		if t, _, _ := splitStrike(val); t == base {
 			closeTracked(id, base)
 		}
 	}
@@ -204,9 +230,11 @@ func closeTracked(windowID, ttyBase string) {
 // — views that ended without passing through go/done (crashes, manual
 // detach). Called from the explorer's poll. Two safety rules (issue #48):
 // a failed client query aborts the sweep (uncertainty must not read as "no
-// clients" and reap everything), and a window is only closed on the second
-// consecutive absent observation — a "?" strike on the option value — so a
-// newborn window whose client hasn't attached yet survives the race.
+// clients" and reap everything), and a window is only closed once it has
+// been absent across a timestamped "?" strike at least strikeMinAge old —
+// wall-clock age, not sweep count, because sweeps bunch up (a click-triggered
+// rebuild right before the periodic tick) and back-to-back sweeps must not
+// reap a newborn window whose client simply hasn't attached yet (issue #95).
 func SweepTermWindows() {
 	tracked := trackedWindows()
 	if len(tracked) == 0 {
@@ -223,7 +251,7 @@ func SweepTermWindows() {
 		}
 	}
 	for id, value := range tracked {
-		tty := strings.TrimSuffix(value, "?")
+		tty, struck, since := splitStrike(value)
 		if _, err := strconv.Atoi(id); err != nil {
 			// Pre-#56 entry, keyed the other way around (@fm_win_<tty> =
 			// window id): rewrite in the id-keyed form (strike dropped —
@@ -242,13 +270,20 @@ func SweepTermWindows() {
 		}
 		switch {
 		case attached[tty]:
-			if strings.HasSuffix(value, "?") { // back: clear the strike
+			if struck { // back: clear the strike
 				Tmux("set-option", "-s", termWinKey(id), tty)
 			}
-		case strings.HasSuffix(value, "?"): // second absence: really gone
+		case struck && since == 0:
+			// Pre-#95 bare "?" strike, age unknown: re-stamp instead of
+			// closing — costs one strikeMinAge wait, same philosophy as the
+			// legacy-entry migration above.
+			Tmux("set-option", "-s", termWinKey(id), strikeValue(tty))
+		case struck && nowUnix()-since >= int64(strikeMinAge/time.Second):
+			// Absent the whole strike age: really gone.
 			closeTracked(id, tty)
-		default: // first absence: strike, close next sweep if still gone
-			Tmux("set-option", "-s", termWinKey(id), value+"?")
+		case struck: // young strike: keep waiting, however often we sweep
+		default: // first absence: strike, close once the strike has aged
+			Tmux("set-option", "-s", termWinKey(id), strikeValue(tty))
 		}
 	}
 }
