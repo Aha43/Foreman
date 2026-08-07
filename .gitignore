@@ -2,3 +2,6 @@
 # swallow cmd/foreman/ and cmd/foreman-explorer/ (issue #16).
 /foreman
 /foreman-explorer
+
+# Finder droppings — unanchored on purpose, Finder leaves them anywhere.
+.DS_Store
