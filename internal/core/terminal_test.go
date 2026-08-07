@@ -51,6 +51,33 @@ func trackingFake(listing, clients string) func(args []string) (string, bool) {
 	}
 }
 
+// fixNow pins the sweep's clock; restored via t.Cleanup.
+func fixNow(t *testing.T, ts int64) {
+	t.Helper()
+	orig := nowUnix
+	t.Cleanup(func() { nowUnix = orig })
+	nowUnix = func() int64 { return ts }
+}
+
+func TestSplitStrike(t *testing.T) {
+	cases := []struct {
+		value, tty string
+		struck     bool
+		since      int64
+	}{
+		{"ttys012", "ttys012", false, 0},
+		{"ttys012?", "ttys012", true, 0}, // pre-#95 bare strike
+		{"ttys012?900", "ttys012", true, 900},
+	}
+	for _, c := range cases {
+		tty, struck, since := splitStrike(c.value)
+		if tty != c.tty || struck != c.struck || since != c.since {
+			t.Errorf("splitStrike(%q) = (%q, %v, %d), want (%q, %v, %d)",
+				c.value, tty, struck, since, c.tty, c.struck, c.since)
+		}
+	}
+}
+
 func TestTermWinKey(t *testing.T) {
 	if got := termWinKey("77"); got != "@fm_win_77" {
 		t.Errorf("got %q", got)
@@ -166,20 +193,22 @@ func TestCloseTermWindowFailureKeepsTracking(t *testing.T) {
 }
 
 func TestSweepFirstAbsenceOnlyStrikes(t *testing.T) {
+	fixNow(t, 1000)
 	tmuxCalls, osaCalls := recordCalls(t,
 		trackingFake("@fm_win_77 ttys012\nstatus-interval 15", ""), "")
 	SweepTermWindows()
 	if len(*osaCalls) != 0 {
 		t.Errorf("first absence must not close, got %v", *osaCalls)
 	}
-	if !strings.Contains(strings.Join(*tmuxCalls, ";"), "set-option -s @fm_win_77 ttys012?") {
-		t.Errorf("want a strike recorded, got %v", *tmuxCalls)
+	if !strings.Contains(strings.Join(*tmuxCalls, ";"), "set-option -s @fm_win_77 ttys012?1000") {
+		t.Errorf("want a timestamped strike recorded, got %v", *tmuxCalls)
 	}
 }
 
-func TestSweepSecondAbsenceCloses(t *testing.T) {
+func TestSweepAgedStrikeCloses(t *testing.T) {
+	fixNow(t, 1000) // strike from t=900: absent a full strikeMinAge
 	tmuxCalls, osaCalls := recordCalls(t,
-		trackingFake(`@fm_win_77 "ttys012?"`+"\n@fm_win_88 ttys999", "/dev/ttys999"), "")
+		trackingFake(`@fm_win_77 "ttys012?900"`+"\n@fm_win_88 ttys999", "/dev/ttys999"), "")
 	SweepTermWindows()
 	if len(*osaCalls) != 1 || !strings.HasSuffix((*osaCalls)[0], " 77 /dev/ttys012") {
 		t.Errorf("want exactly the struck orphan closed, got %v", *osaCalls)
@@ -193,9 +222,41 @@ func TestSweepSecondAbsenceCloses(t *testing.T) {
 	}
 }
 
+func TestSweepYoungStrikeWaits(t *testing.T) {
+	// A newborn window struck moments ago (issue #95): back-to-back sweeps —
+	// a click-triggered rebuild then the periodic tick — must not close it,
+	// or rewrite the strike (which would reset its age forever).
+	fixNow(t, 1000)
+	tmuxCalls, osaCalls := recordCalls(t,
+		trackingFake(`@fm_win_77 "ttys012?995"`, ""), "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("young strike must not close, got %v", *osaCalls)
+	}
+	if joined := strings.Join(*tmuxCalls, ";"); strings.Contains(joined, "set-option -s @fm_win_77") ||
+		strings.Contains(joined, "-u @fm_win_77") {
+		t.Errorf("young strike must be left untouched: %s", joined)
+	}
+}
+
+func TestSweepLegacyBareStrikeRestamped(t *testing.T) {
+	// A pre-#95 strike has no timestamp — age unknown, so it must be
+	// re-stamped, never closed on it.
+	fixNow(t, 1000)
+	tmuxCalls, osaCalls := recordCalls(t,
+		trackingFake(`@fm_win_77 "ttys012?"`, ""), "")
+	SweepTermWindows()
+	if len(*osaCalls) != 0 {
+		t.Errorf("unknown-age strike must not close, got %v", *osaCalls)
+	}
+	if !strings.Contains(strings.Join(*tmuxCalls, ";"), "set-option -s @fm_win_77 ttys012?1000") {
+		t.Errorf("want the strike re-stamped, got %v", *tmuxCalls)
+	}
+}
+
 func TestSweepReattachClearsStrike(t *testing.T) {
 	tmuxCalls, osaCalls := recordCalls(t,
-		trackingFake(`@fm_win_77 "ttys012?"`, "/dev/ttys012"), "")
+		trackingFake(`@fm_win_77 "ttys012?990"`, "/dev/ttys012"), "")
 	SweepTermWindows()
 	if len(*osaCalls) != 0 {
 		t.Errorf("reattached client must not be closed, got %v", *osaCalls)

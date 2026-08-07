@@ -8,6 +8,16 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A newly launched participant's window is no longer swept closed before it attaches.**
+  Launching a role from the explorer opened a Terminal window and immediately triggered a
+  menu rebuild — whose husk sweep struck the newborn window while its shell was still
+  starting, and a periodic tick landing right behind it counted as the "second absence" and
+  closed the window out from under the user (the participant lived on, reachable from the
+  menu). Strikes now carry a timestamp, and a window is only closed once its strike has
+  aged a full sweep cycle — absence measured in wall-clock time, not sweep count. Closes #95.
+
 ## [0.9.0] - 2026-08-05
 
 An off-cycle pair, no sprint: foreman gets its visual identity, and `adopt` learns to meet
