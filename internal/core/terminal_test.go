@@ -86,7 +86,7 @@ func TestTermWinKey(t *testing.T) {
 
 func TestOpenTerminalRecordsWindow(t *testing.T) {
 	tmuxCalls, _ := recordCalls(t, trackingFake("", ""), "/dev/ttys042\n77")
-	if err := OpenTerminal("'fm' 'A' go 'coder'"); err != nil {
+	if err := OpenTerminal("", "'fm' 'A' go 'coder'"); err != nil {
 		t.Fatal(err)
 	}
 	want := "set-option -s @fm_win_77 ttys042"
@@ -101,7 +101,7 @@ func TestOpenTerminalPurgesRecycledTty(t *testing.T) {
 	// the new one in the sweep (issue #56).
 	tmuxCalls, osaCalls := recordCalls(t,
 		trackingFake("@fm_win_60 ttys042", ""), "/dev/ttys042\n77")
-	if err := OpenTerminal("'fm' 'A' go 'coder'"); err != nil {
+	if err := OpenTerminal("", "'fm' 'A' go 'coder'"); err != nil {
 		t.Fatal(err)
 	}
 	if len(*osaCalls) != 2 || !strings.HasSuffix((*osaCalls)[1], " 60 /dev/ttys042") {
@@ -121,7 +121,7 @@ func TestOpenTerminalRejectsMalformedReply(t *testing.T) {
 	// error, not a success (issue #61).
 	for _, reply := range []string{"", "onlyoneline", "notatty\n77", "/dev/ttys042\nNaN"} {
 		_, _ = recordCalls(t, trackingFake("", ""), reply)
-		if err := OpenTerminal("'fm' 'A' go 'coder'"); err == nil {
+		if err := OpenTerminal("", "'fm' 'A' go 'coder'"); err == nil {
 			t.Errorf("reply %q: want error, got nil", reply)
 		}
 	}
@@ -135,8 +135,35 @@ func TestOpenTerminalFailsWhenTrackingNotPersisted(t *testing.T) {
 		return trackingFake("", "")(args)
 	}
 	_, _ = recordCalls(t, fake, "/dev/ttys042\n77")
-	if err := OpenTerminal("'fm' 'A' go 'coder'"); err == nil {
+	if err := OpenTerminal("", "'fm' 'A' go 'coder'"); err == nil {
 		t.Error("want error when tracking cannot be persisted")
+	}
+}
+
+func TestOpenTerminalGhosttyIsUntracked(t *testing.T) {
+	// Ghostty exposes no tty to match a tmux client against, so nothing is
+	// recorded; the typed exit closes the window once fm returns.
+	tmuxCalls, osaCalls := recordCalls(t, trackingFake("", ""), "")
+	if err := OpenTerminal("ghostty", "'fm' 'A' go 'coder'"); err != nil {
+		t.Fatal(err)
+	}
+	if len(*osaCalls) != 1 || !strings.Contains((*osaCalls)[0], `tell application "Ghostty"`) ||
+		!strings.HasSuffix((*osaCalls)[0], " 'fm' 'A' go 'coder' && exit") {
+		t.Errorf("osascript calls = %v", *osaCalls)
+	}
+	if len(*tmuxCalls) != 0 {
+		t.Errorf("ghostty windows must not be tracked, got tmux calls %v", *tmuxCalls)
+	}
+}
+
+func TestOpenTerminalRejectsUnknownApp(t *testing.T) {
+	// A typo in [terminal] must not silently open Terminal.app instead.
+	_, osaCalls := recordCalls(t, trackingFake("", ""), "")
+	if err := OpenTerminal("iterm", "'fm' 'A' go 'coder'"); err == nil {
+		t.Error("want error for unknown app")
+	}
+	if len(*osaCalls) != 0 {
+		t.Errorf("unknown app must not run osascript, got %v", *osaCalls)
 	}
 }
 

@@ -8,6 +8,20 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **The terminal app is configurable.** `[terminal] app` in the config picks where foreman
+  opens windows (explorer clicks, `go --window`): `terminal` for Terminal.app, still the
+  default when unset, or `ghostty` (1.3+). Ghostty windows are not tracked — Ghostty exposes
+  no tty — so the command foreman types into the window's shell ends with `exit`, and the
+  window closes itself once its view moves away; a failing `fm` leaves it open with the
+  error. An unknown value is an error naming the config file, not a silent Terminal.app.
+
+### Changed
+
+- **The explorer reports a window that fails to open.** A click whose window could not be
+  opened or tracked used to do nothing; the error now arrives as a notification.
+
 ### Fixed
 
 - **A newly launched participant's window is no longer swept closed before it attaches.**

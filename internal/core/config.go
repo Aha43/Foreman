@@ -15,9 +15,13 @@ import (
 //
 //	[project.A]
 //	root = "~/code/project-a"
+//
+//	[terminal]
+//	app = "terminal"
 type Config struct {
 	Roles    map[string]Role
 	Projects map[string]ProjectConfig
+	Terminal string
 }
 
 type Role struct {
@@ -80,6 +84,10 @@ func LoadConfig() Config {
 				p.Root = val
 			}
 			cfg.Projects[name] = p
+		case "terminal":
+			if key == "app" {
+				cfg.Terminal = val
+			}
 		}
 	}
 	return cfg
@@ -106,6 +114,11 @@ cmd = "claude"
 # Where "new" starts terminals for a project (else: your current directory).
 # [project.A]
 # root = "~/code/project-a"
+
+# The app foreman opens windows in (explorer clicks, go --window).
+# Supported: "terminal" (Terminal.app, used when unset), "ghostty" (1.3+).
+# [terminal]
+# app = "terminal"
 `
 
 // InitConfig writes a starter config for the user to edit. Later this can

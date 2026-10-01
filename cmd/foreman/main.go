@@ -15,7 +15,7 @@ usage:
   foreman list                     all projects and their terminals
   foreman <project> new <role>     new terminal in the project (runs role preset, if any)
   foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
-                                   --window to open a new Terminal window instead)
+                                   --window to open a new terminal window instead)
   foreman <project> list           terminals in the project
   foreman <project> adopt <role>   pull the current terminal into the project (outside
                                    tmux: new shell in the current dir, viewed here)

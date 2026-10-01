@@ -19,7 +19,7 @@ foreman init                     write a starter config to edit
 foreman list                     all projects and their terminals
 foreman <project> new <role>     new terminal in the project (runs role preset, if any)
 foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
-                                 --window to open a new Terminal window instead)
+                                 --window to open a new terminal window instead)
 foreman <project> list           terminals in the project
 foreman <project> adopt <role>   pull the terminal you're in into the project (works
                                  outside tmux too — see below)
@@ -89,7 +89,7 @@ elsewhere on PATH.)
 ## Explorer (menu bar app)
 
 A macOS menu bar companion: glance at every project and participant, click one
-to pull its view into a Terminal window (same move semantics as `go`). Each
+to pull its view into a terminal window (same move semantics as `go`). Each
 project's menu also *acts*: create a participant or a brand-new project by
 name, pin/unpin, rename, or end one (behind a confirmation) — every action is
 the matching `fm` command, so the explorer never knows anything the CLI
@@ -129,12 +129,19 @@ cmd = "claude"
 
 [project.A]
 root = "~/code/project-a"
+
+[terminal]
+app = "terminal"
 ```
 
 `new` starts terminals in the role's `dir`, else the project `root`, else your
 current directory. Role commands run *inside* the shell, so the window survives
 the process exiting. Unknown roles just get a plain shell — manual-work
 terminals are first-class participants.
+
+`[terminal] app` picks the app foreman opens windows in (explorer clicks,
+`go --window`): `terminal` for Terminal.app, the default when unset, or
+`ghostty`.
 
 ## Observation
 
@@ -145,7 +152,7 @@ macOS notification when an agent in a **pinned** project starts waiting. Detecti
 what agents announce (Claude Code signals busy/idle in its pane title) with a careful
 content fallback — see [how it works](docs/how-it-works.md).
 
-Terminal windows that foreman opens (explorer clicks, `go --window`) are closed again
+Windows that foreman opens (explorer clicks, `go --window`) are closed again
 automatically once their view moves elsewhere — no `[detached]` husks pile up. Windows you
 opened yourself are never touched.
 
