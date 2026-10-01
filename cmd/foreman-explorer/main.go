@@ -534,14 +534,15 @@ func notify(msg string) {
 		"-e", "end run", msg).Run()
 }
 
-// openInTerminal opens a tracked Terminal.app window running
+// openInTerminal opens a window in the configured terminal app running
 // "fm <project> go <role>"; with go's move semantics the participant's view
-// lands there and any other viewer detaches. Tracking means foreman closes
-// the window again once its view moves away (issue #43). Every shell
-// argument is quoted (issue #30).
+// lands there and any other viewer detaches. The window closes again once
+// its view moves away (issue #43). Every shell argument is quoted (issue #30).
 func openInTerminal(project, role string) {
 	cmd := fmt.Sprintf("%s %s go %s", core.ShellQuote(fmBinary()), core.ShellQuote(project), core.ShellQuote(role))
-	core.OpenTerminal(cmd)
+	if err := core.OpenTerminal(core.LoadConfig().Terminal, cmd); err != nil {
+		notify(err.Error())
+	}
 }
 
 // fmBinary locates the fm CLI: the sibling binary next to this executable

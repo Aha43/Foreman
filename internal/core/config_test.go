@@ -27,6 +27,9 @@ dir = "~/code/a"
 
 [project.A]
 root = "~/code/project-a"
+
+[terminal]
+app = "terminal"
 `)
 	cfg := LoadConfig()
 	if got := cfg.Roles["planner"].Cmd; got != "claude --permission-mode plan" {
@@ -37,6 +40,9 @@ root = "~/code/project-a"
 	}
 	if got := cfg.Projects["A"].Root; got != "~/code/project-a" {
 		t.Errorf("project A root = %q", got)
+	}
+	if cfg.Terminal != "terminal" {
+		t.Errorf("terminal app = %q", cfg.Terminal)
 	}
 }
 

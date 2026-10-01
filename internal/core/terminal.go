@@ -60,12 +60,25 @@ var runOsascript = func(args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// OpenTerminal opens a Terminal.app window running shellCmd and records the
+// OpenTerminal opens a window running shellCmd in the configured terminal
+// app: "terminal" (Terminal.app, also when unset) or "ghostty". An unknown
+// app is an error rather than a silent fallback.
+func OpenTerminal(app, shellCmd string) error {
+	switch app {
+	case "", "terminal":
+		return openTermWindow(shellCmd)
+	case "ghostty":
+		return openGhostty(shellCmd)
+	}
+	return fmt.Errorf("unknown terminal app %q in %s (have: terminal, ghostty)", app, ConfigPath())
+}
+
+// openTermWindow opens a Terminal.app window running shellCmd and records the
 // window against its tty. The command travels as an osascript argument,
 // never interpolated into the script (issue #30). An untracked window is a
 // husk-to-be that cleanup can never find, so a reply that doesn't parse or
 // tracking that doesn't persist is an error, not a success (issue #61).
-func OpenTerminal(shellCmd string) error {
+func openTermWindow(shellCmd string) error {
 	// Returns "<tty>\n<window id>" for tracking.
 	out, err := runOsascript(
 		"-e", "on run argv",
@@ -286,4 +299,22 @@ func SweepTermWindows() {
 			Tmux("set-option", "-s", termWinKey(id), strikeValue(tty))
 		}
 	}
+}
+
+// openGhostty types shellCmd into a new Ghostty window's default shell,
+// followed by exit, so the window closes itself once the view moves away and
+// stays open showing the error if fm fails. Ghostty's own `command` property
+// can't be used: it forces wait-after-command, leaving every window behind.
+// Nothing is tracked — Ghostty exposes no tty to match against tmux clients.
+func openGhostty(shellCmd string) error {
+	_, err := runOsascript(
+		"-e", "on run argv",
+		"-e", `tell application "Ghostty"`,
+		"-e", "activate",
+		"-e", "set cfg to new surface configuration",
+		"-e", "set initial input of cfg to (item 1 of argv) & linefeed",
+		"-e", "new window with configuration cfg",
+		"-e", "end tell",
+		"-e", "end run", shellCmd+" && exit")
+	return err
 }
