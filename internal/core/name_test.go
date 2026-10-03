@@ -10,8 +10,8 @@ func TestValidateProjectName(t *testing.T) {
 		}
 	}
 	bad := []string{
-		"",                       // empty
-		"done", "list", "rename", // reserved verbs and globals
+		"",                                   // empty
+		"done", "list", "rename", "snapshot", // reserved verbs and globals
 		"my.app", "a:b", // tmux targets split on . and :
 		"x[1]",         // would corrupt the config header
 		"a\nb", "a\tb", // control characters break line parsing

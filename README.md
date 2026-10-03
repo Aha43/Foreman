@@ -17,6 +17,8 @@ terminal is a named *participant* in a *project*.
 ```
 foreman init                     write a starter config to edit
 foreman list                     all projects and their terminals
+foreman snapshot --json          the same, plus states and config choices, as JSON for
+                                 front ends (--watch records states to spot transitions)
 foreman <project> new <role>     new terminal in the project (runs role preset, if any)
 foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
                                  --window to open a new Terminal window instead)
