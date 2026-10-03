@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -373,6 +374,29 @@ func stateMark(s core.State) string {
 		return "○"
 	}
 	return ""
+}
+
+// cmdSnapshot prints every project, participant and state as one JSON
+// document — the read side for front ends that can't afford a tmux
+// round-trip per participant (issue #97). --json is required so a human
+// format can take the bare verb later; --watch makes this call the
+// watcher's memory (see core.TakeSnapshot).
+func cmdSnapshot(flags []string) error {
+	for _, f := range flags {
+		if f != "--json" && f != "--watch" {
+			return fmt.Errorf("snapshot: unknown flag %q (use --json, --watch)", f)
+		}
+	}
+	if !hasFlag(flags, "--json") {
+		return fmt.Errorf("snapshot only speaks JSON for now — use foreman snapshot --json")
+	}
+	s, err := core.TakeSnapshot(core.LoadConfig(), hasFlag(flags, "--watch"))
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(s)
 }
 
 // cmdTicker prints the cross-project attention line for one status bar.

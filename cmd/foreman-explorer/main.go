@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
-	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -152,8 +151,8 @@ func refresh(force bool) {
 	labels := observe(cfg, projects)
 	// Compute the config-derived lists once and thread them through — both
 	// the fingerprint and the menu build need them (issue #79 review).
-	roles := roleChoices(cfg)
-	dormant := dormantNames(cfg, projects)
+	roles := core.RoleChoices(cfg)
+	dormant := core.DormantProjects(cfg, projects)
 	if shape := menuShape(projects, roles, dormant); force || shape != lastShape {
 		lastShape = shape
 		rebuildMenu(projects, labels, roles, dormant)
@@ -310,20 +309,6 @@ func addRoleItems(menu *systray.MenuItem, project string, roles []string, have m
 	}
 }
 
-// roleChoices is what a new participant may start as: every configured role
-// plus shell — unknown roles get a plain shell, so it is always valid.
-func roleChoices(cfg core.Config) []string {
-	roles := make([]string, 0, len(cfg.Roles)+1)
-	for r := range cfg.Roles {
-		roles = append(roles, r)
-	}
-	if _, ok := cfg.Roles["shell"]; !ok {
-		roles = append(roles, "shell")
-	}
-	sort.Strings(roles)
-	return roles
-}
-
 // buildDormant lists configured projects with no live session — "create new
 // project" without inventing anything: a project exists when its session
 // does, and starting one is just new on a project not running yet
@@ -367,22 +352,6 @@ func buildNewProject(roles []string, d chan struct{}) {
 		})
 	}
 	systray.AddSeparator()
-}
-
-// dormantNames is the configured projects with no live session, sorted.
-func dormantNames(cfg core.Config, projects []core.Project) []string {
-	live := map[string]bool{}
-	for _, p := range projects {
-		live[p.Name] = true
-	}
-	var dormant []string
-	for name := range cfg.Projects {
-		if !live[name] {
-			dormant = append(dormant, name)
-		}
-	}
-	sort.Strings(dormant)
-	return dormant
 }
 
 // addRenameItem adds a "Rename…" entry under menu, prompting for the new

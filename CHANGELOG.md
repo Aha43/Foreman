@@ -8,6 +8,16 @@ minor = features (breaking changes allowed), patch = fixes.
 
 ## [Unreleased]
 
+### Added
+
+- **`foreman snapshot --json`: the whole picture in one call.** Every project, participant
+  and observed state, plus the role choices and dormant projects from the config, as one
+  versioned JSON document (`"schema": 1`). With `--watch` it is also the watcher's memory:
+  each participant reports the state recorded last time (`previous`) and the fresh one is
+  recorded, so a front end can spot transitions into waiting without state of its own. The
+  read side for a Windows explorer, where every tmux call would otherwise cross `wsl.exe`
+  at ~125 ms apiece. `snapshot` is now reserved as a project name. Part of #97.
+
 ### Fixed
 
 - **A newly launched participant's window is no longer swept closed before it attaches.**

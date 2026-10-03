@@ -13,6 +13,8 @@ const usage = `foreman — organize terminals by project, on top of tmux
 usage:
   foreman init                     write a starter config to edit
   foreman list                     all projects and their terminals
+  foreman snapshot --json          all projects, terminals and states as JSON, for
+                                   front ends (--watch records states for transitions)
   foreman <project> new <role>     new terminal in the project (runs role preset, if any)
   foreman <project> go <role>      move that terminal's view here (--mirror to view alongside,
                                    --window to open a new Terminal window instead)
@@ -48,6 +50,10 @@ func main() {
 	}
 	if args[0] == "init" {
 		fail(cmdInit())
+		return
+	}
+	if args[0] == "snapshot" {
+		fail(cmdSnapshot(args[1:]))
 		return
 	}
 	// Plumbing for the status-bar ticker (set up by StyleSession); not part
